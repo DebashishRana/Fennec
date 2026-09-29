@@ -1,8 +1,38 @@
-<img width="521" height="478" alt="talon" src="https://github.com/user-attachments/assets/1ee60dd2-c615-4d5a-a6dd-394067c21973" />
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/1ee60dd2-c615-4d5a-a6dd-394067c21973" width="240" alt="TALON" />
+</div>
 
-# TALON
+<div align="center">
+  <h1>TALON</h1>
+  <p><strong>Tampering and Anomaly Locator and Operational Net</strong></p>
+</div>
+
+<hr>
+
+<div align="center">
+  <a href="https://www.youtube.com/watch?v=REPLACE_WITH_VIDEO_ID">
+    <img src="https://img.shields.io/badge/Watch%20App%20Demo-FF0000?style=for-the-badge&logo=youtube&logoColor=white" alt="Watch App Demo" />
+  </a>
+  <a href="https://www.notion.so/REPLACE_WITH_TALON_MODULE_DOCUMENTATION">
+    <img src="https://img.shields.io/badge/Module--Wise%20Documentation-000000?style=for-the-badge&logo=notion&logoColor=white" alt="Module-wise documentation" />
+  </a>
+  <br>
+  <sub>Video timestamps are available in the YouTube description.</sub>
+</div>
+
+
 
 ## TABLE OF CONTENTS 
+Key Innovation CSII 
+Key innovation Geopol 
+Key Innovation Sarvam Airtight Integration plan 
+Models Performance 
+Hash chain and blockchain 
+Module 1 OCR
+Module 2 Document validators and classifiers
+Module 3 Tampering and Anomaly Detection
+Module 4 Face verification module 
+Module 5 Integrations with govt sources 
 
 
 ## Introduction
