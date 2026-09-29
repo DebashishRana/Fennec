@@ -1,235 +1,288 @@
 # TALON
 
-## 1. Introduction
+**Tampering and Anomaly Locator and Operational Net**
+
+TALON is an AI-assisted identity and travel-document screening platform for border, airport, immigration, and high-risk checkpoint environments. It combines document classification, OCR extraction, MRZ validation, face comparison, evidence review, CSII relationship analysis, Geopol movement visualization, and a tamper-evident audit trail into one officer-facing workflow.
+
+The system is designed as decision support. It does not replace an authorized officer, immigration database, passport authority, or legal verification process. TALON surfaces evidence, inconsistencies, confidence scores, and audit records so that a human reviewer can make faster and more consistent screening decisions.
+
+## Problem Statement
+
+Border checkpoints process passports, visas, national identity documents, driving licences, permits, and other travel documents under high passenger volume. Current verification workflows often depend on manual inspection, visual judgement, and basic database lookups. This creates gaps when documents contain subtle text changes, photo replacement, forged stamps, inconsistent MRZ fields, or identity impersonation.
+
+TALON addresses these challenges through a modular AI pipeline:
 
-Identity and travel-document verification is a critical challenge in **border security and high-risk screening**, where simply identifying a document or reading its text is not enough. A reliable screening system must determine whether the document is genuine, whether its information is internally consistent, whether it shows signs of manipulation, and whether the person presenting it matches the identity represented by the document.
+| Challenge | TALON response |
+|---|---|
+| Fake passports or visas | Document classification, OCR, MRZ parsing, and rule-based consistency checks |
+| Altered photographs | Document portrait extraction and face comparison against live capture |
+| Modified dates or document numbers | OCR/MRZ field comparison and validation |
+| Tampered stamps or document regions | Planned forensic/tampering detector module |
+| Multiple identities used by the same person | CSII graph layer using privacy-preserving evidence references |
+| High passenger volume | Single guided verification flow with dashboard review |
+| Weak auditability | Hash-chained audit events and structured session records |
+
+## System Overview
+
+### Runtime Components
+
+| Layer | Current implementation | Production direction |
+|---|---|---|
+| Frontend | React 18, Vite, MapLibre, React Flow, local session store | Authenticated officer console with central API state |
+| Backend | FastAPI, OCR/document processing, Rekognition integration, chat endpoint | Containerized backend with controlled network and secrets |
+| Classification | Aadhaar notebook/artifacts where available; passport runtime path uses HOG + scikit-learn RandomForest; passport research notebook uses Keras/TensorFlow CNN | Versioned model registry and repeatable training/evaluation jobs |
+| OCR | Tesseract OCR with PDF rasterization support through Poppler | OCR worker with queueing, retry, and document-quality scoring |
+| MRZ | Client-side MRZ parser for passport-style MRZ text | Backend MRZ worker with issuer rules and field contradiction checks |
+| Face comparison | AWS Rekognition DetectFaces and CompareFaces | Rekognition or approved sovereign biometric service behind backend only |
+| CSII | Synthetic demo graph layer | Authorized integrations with identity and travel-intelligence systems |
+| Geopol | Synthetic checkpoint map and travel trail | Event-backed checkpoint heatmaps and individual movement timelines |
+| Storage | Browser/local demo store and optional Azure Blob staging | S3/MinIO/NIC storage with encryption, object hashes, retention and legal hold |
+| Database | Separate MySQL schema package under `database/` | MySQL/PostgreSQL system of record integrated into backend |
+| Audit | Frontend hash-chained audit events for demo | Backend append-only hash-chained audit ledger with external anchoring |
+
+## Verification Workflow
+
+An officer starts a verification session, submits document evidence, and captures the live face image. The backend coordinates classification, OCR extraction, MRZ parsing, and face comparison, then returns an evidence summary with module-level confidence and review signals. The officer can verify, flag, or reject the session; that action is then recorded in the audit trail.
+
+## What We Can Visualize
+
+The project already has enough structured data to present meaningful graphs and tables without inventing external records.
+
+| Visualization | Source in project | What it shows |
+|---|---|---|
+| Module pipeline status | Saved verification sessions | Classification, OCR, MRZ, face, CSII status per session |
+| Risk distribution | `riskLevel`, `riskScore`, decision status | Low, medium, high, rejected, manual-review counts |
+| Session activity chart | Dashboard service records | Daily or hourly verification volume |
+| Checkpoint heatmap | `GeoIntelPage` synthetic checkpoint data | Hot zones across Indian checkpoint locations |
+| Person travel trail | Geopol demo data and future session travel events | Check-in/check-out path over time |
+| CSII graph | `csiiMockResult` and React Flow UI | Links between face evidence reference, document, Aadhaar demo layer, and travel events |
+| OCR/MRZ evidence table | `documentAnalysis` object | Extracted fields, raw OCR text, parsed MRZ, MRZ issues |
+| Face comparison panel | `faceVerification` and session media | Document portrait, live capture, similarity confidence |
+| Audit chain table | RBAC audit store | Event index, actor, action, previous hash, event hash, chain status |
+
+## Model and Evaluation Status
+
+TALON should report only metrics that are actually produced by the project notebooks or repeatable evaluation runs. The tables below separate confirmed notebook output from metrics that still need a clean exported evaluation run.
+
+### Passport Classifier - Keras/TensorFlow Notebook Benchmark
+
+Source: `models/Passport classfier/passport_classifier.ipynb`
+
+| Metric | Value |
+|---|---:|
+| Test accuracy | 98.40% |
+| Test samples | 187 |
+| Non-passport support | 67 |
+| Passport support | 120 |
+| Macro precision | 0.98 |
+| Macro recall | 0.98 |
+| Macro F1-score | 0.98 |
+| Weighted precision | 0.98 |
+| Weighted recall | 0.98 |
+| Weighted F1-score | 0.98 |
 
-Conventional solutions often handle these tasks independently through **document classification, OCR, or face matching**, creating gaps between different verification signals. A manipulated document may still produce accurate OCR, while a genuine document may be presented by the wrong individual. Similarly, apparent inconsistencies can result from genuine fraud or simply from blur, glare, poor lighting, perspective distortion, rotation, compression, or low-quality captures.
+Per-class results from the notebook:
+
+| Class | Precision | Recall | F1-score | Support |
+|---|---:|---:|---:|---:|
+| Non-Passport | 0.98 | 0.97 | 0.98 | 67 |
+| Passport | 0.98 | 0.99 | 0.99 | 120 |
+
+Training trace:
+
+| Epoch | Train accuracy | Validation accuracy | Validation loss |
+|---:|---:|---:|---:|
+| 1 | 62.75% | 68.67% | 0.6025 |
+| 2 | 75.84% | 80.67% | 0.3430 |
+| 3 | 91.44% | 84.00% | 0.3480 |
+| 4 | 94.80% | 96.00% | 0.1299 |
+| 5 | 96.48% | 97.33% | 0.1105 |
+| 6 | 98.32% | 98.00% | 0.1025 |
+| 7 | 99.16% | 97.33% | 0.0723 |
+| 8 | 98.66% | 98.67% | 0.0588 |
+| 9 | 98.83% | 94.00% | 0.1797 |
+| 10 | 98.15% | 98.67% | 0.0600 |
 
-The challenge is further increased by the diversity of **Indian and foreign passports, visas, identity documents, driving licences, permits, and other document formats**, along with the limited availability of representative Indian datasets containing real and manipulated documents. Modern forgeries can also involve subtle, localized modifications to photographs, text, signatures, stamps, or other document regions that are difficult to identify through visual inspection alone.
+### Aadhaar Classifier - Notebook and Runtime Status
 
-**TALON** addresses this fragmented verification problem through a unified, multi-stage screening pipeline that combines **document classification, OCR and metadata extraction, MRZ validation, tampering detection, face verification, and cross-validation**. Rather than relying on a single prediction, TALON combines these signals to assess the overall consistency of the available evidence and identify documents that appear trustworthy, suspicious, or require further investigation.
+Source: `models/Aadhar Classifier/Aadhar.ipynb`
 
-> **TALON is designed not merely to read an identity document, but to determine whether its visual, textual, machine-readable, forensic, and biometric evidence is sufficiently consistent for reliable screening.**
+The Aadhaar notebook contains model-development code for Logistic Regression, tuned SVM, tuned RandomForest, PCA, and soft-voting ensemble. The notebook text states that optimization improved the score from roughly 79-80% to about 83%, but the persisted output cells do not currently include the final precision, recall, F1-score, confusion matrix, or ROC-AUC values.
 
-## 2. TALON System & Model Summary
+For a formal submission, this section should be regenerated from a clean evaluation run before claiming final Aadhaar metrics.
 
-TALON is a multi-stage AI-assisted identity and document screening system designed to detect suspicious, manipulated, or inconsistent identity documents. Instead of relying on a single model, TALON combines document classification, OCR, MRZ validation, tampering detection, face verification, and cross-validation to generate an evidence-based screening result.
+| Model candidate | Current evidence | README status |
+|---|---|---|
+| Logistic Regression + PCA | Notebook code and score variable | Re-run required for exact accuracy |
+| Tuned SVM + PCA | Notebook code with `classification_report` call | Re-run required for precision, recall, F1 |
+| Tuned RandomForest + PCA | Notebook code with GridSearchCV | Re-run required for exact accuracy |
+| Soft-voting ensemble | Notebook note says about 83% after optimization | Treat as development result until exported |
+| Runtime fallback | OCR keywords when artifacts are unavailable | Conservative fallback, not a trained-score claim |
 
-The complete pipeline processes a document progressively, beginning with document identification and information extraction, followed by authenticity and consistency analysis. The outputs from these modules are finally combined into a unified risk assessment that can assist an authorized operator in identifying documents requiring further verification.
+### OCR and MRZ Evaluation Plan
 
-> **Figure 1 — TALON End-to-End System Architecture**  
-> *Add complete system architecture diagram here.*
+| Module | Metric to report | How to compute |
+|---|---|---|
+| OCR full text | Character error rate and word error rate | Compare OCR output against manually prepared transcripts |
+| OCR fields | Field accuracy | Compare name, DOB, nationality, document number, expiry fields |
+| MRZ detection | Detection recall | Count documents where an MRZ exists and parser finds it |
+| MRZ validation | Check-digit pass rate | Verify MRZ check digits and parser issues |
+| OCR-MRZ consistency | Contradiction rate | Compare visual fields against parsed MRZ fields |
 
-### 2.1 Document Detection & Classification
+### Face Verification Evaluation Plan
 
-The classification module identifies the type of document provided to the system, such as passport, Aadhaar, PAN, driving licence, visa, or other supported identity documents. The detected document type determines the processing and validation rules applied by subsequent modules.
+| Metric | Meaning |
+|---|---|
+| TAR | True accept rate for genuine document/person pairs |
+| FAR | False accept rate for impostor pairs |
+| FRR | False reject rate for genuine pairs |
+| Threshold | Similarity score used for pass/review/fail routing |
+| Provider availability | Percentage of sessions where face comparison returned a valid score |
 
-> **Table 1 — Supported Document Types and Module Coverage**
+### Sarvam 105B Reasoning Layer
 
-| Document Type | Country/Region | Classification | OCR | MRZ | Tampering | Face |
-|---|---|---|---|---|---|---|
-| Passport | - | - | - | - | - | - |
-| Aadhaar | - | - | - | - | - | - |
-| PAN | - | - | - | - | - | - |
-| Driving Licence | - | - | - | - | - | - |
-| Visa | - | - | - | - | - | - |
-| Other | - | - | - | - | - | - |
+Sarvam 105B is planned as the private reasoning layer for officer questions, session summaries, and evidence-backed explanation. It should not be described as the module that verifies documents or makes border decisions. TALON retrieves structured evidence first, then the model explains that evidence in plain language.
 
-### 2.2 OCR & Metadata Extraction
+| Capability | TALON use |
+|---|---|
+| Long-context reasoning | Summarize multi-signal verification sessions and investigation trails |
+| Structured responses | Return case summary, risk reasons, uncertainty, and recommended next steps |
+| Local/private deployment target | Keep prompts and evidence inside an approved deployment boundary when supported by the selected Sarvam licence |
+| Guarded retrieval | Backend retrieves only authorized case evidence before calling the model |
+| Audit logging | Store prompt metadata, retrieved record IDs, model version, and response reference |
 
-TALON uses OCR to extract visible text from the document and converts the extracted information into structured metadata. Important fields such as name, document number, date of birth, nationality, issue date, and expiry date can then be used by subsequent verification stages.
+Benchmarks for Sarvam 105B should be added only from the official Sarvam model card or the team's own controlled evaluation. Do not mix third-party LLM tables into TALON unless the source, date, benchmark, shot count, and model version are clearly identified.
 
-### 2.3 MRZ Extraction & Validation
+## Tamper-Evident Audit Ledger
 
-For documents containing a Machine Readable Zone, TALON performs dedicated MRZ extraction and parsing. The extracted information is validated using MRZ check digits and compared with corresponding information obtained through OCR to identify inconsistencies.
+TALON now implements a lightweight hash-chained audit ledger for local audit events. This is intentionally not described as a blockchain. It is a practical tamper-evident ledger:
 
-### 2.4 Document Tampering Detection
+```text
+event_hash_n = SHA256(chain_index_n + payload_hash_n + previous_event_hash_n)
+payload_hash_n = SHA256(canonical_event_payload_n)
+previous_event_hash_n = event_hash_(n-1)
+```
 
-The tampering detection module analyzes documents for signs of digital or visual manipulation. The analysis covers modifications such as altered text, photographs, signatures, stamps/seals, and other document regions. Authentic and controlled tampered samples are used to develop and evaluate this component.
+Every new audit event stores:
 
-> **Figure 2 — Document Tampering Categories**
+| Field | Purpose |
+|---|---|
+| `chainIndex` | Ordered position of the event in the local chain |
+| `previousEventHash` | Hash of the previous event |
+| `payloadHash` | Hash of the event content |
+| `eventHash` | Final hash linking this event to the chain |
 
-> **Table 4 — Tampering Categories**
+This gives TALON a defensible cybersecurity feature for audit integrity. If a past event is edited, deleted, or reordered, the later hashes no longer verify. In production this should move to the backend database, run under append-only permissions, and periodically anchor the terminal hash in a separate protected system.
 
-| Tampering Category | Affected Region | Description | Samples |
-|---|---|---|---:|
-| Text Tampering | - | - | - |
-| Face Tampering | - | - | - |
-| Signature Tampering | - | - | - |
-| Stamp/Seal Tampering | - | - | - |
-| Other Manipulation | - | - | - |
-| **Total** | - | - | **-** |
+## Data Model and Records
 
-### 2.5 Face Verification
+Core record groups:
 
-For documents containing a facial photograph, TALON can compare the document face with a separately captured (live) face image. The resulting similarity information provides an additional identity-consistency signal and can help identify cases where the presented document and person do not correspond.
+| Record group | Examples |
+|---|---|
+| Session identity | Session ID, officer ID, checkpoint, created time, status |
+| Document evidence | Document type, issuing country, file hash, preview reference |
+| OCR/MRZ results | Extracted fields, MRZ lines, check-digit status, parser issues |
+| Biometric evidence | Document portrait reference, live capture reference, similarity score |
+| Forensic result | Detector status, anomaly type, region, confidence |
+| Risk signals | Module score, severity, reason, supporting evidence |
+| CSII signals | Synthetic demo graph now; authorized correlation records later |
+| Geopol events | Checkpoint, event type, timestamp, travel path |
+| Audit events | Actor, action, target, metadata, hash-chain fields |
 
-### 2.6 Cross-Validation
+## CSII and Geopol
 
-TALON compares information obtained from independent verification stages, including OCR fields, MRZ data, document regions, and facial information. This enables the system to identify inconsistencies that may not be visible through a single verification method.
+CSII and Geopol are intelligence layers, not primary document classifiers.
 
-### 2.7 Decision & Risk Assessment
+CSII links session evidence into a graph: document references, opaque face evidence references, synthetic Aadhaar demo nodes, prior travel records, and anomaly edges. The current CSII module is synthetic and clearly marked as demo-only. In production it should connect only through authorized APIs and strict access control.
 
-The final decision layer combines the outputs of the individual verification modules into an overall screening assessment. Classification confidence, OCR consistency, MRZ validation, tampering indicators, and face verification results can contribute to the final risk level.
+Geopol visualizes checkpoint activity across India. It supports heatmap-style checkpoint load analysis and person-specific travel trail playback for a selected record. The current map uses no-key OpenStreetMap tiles through MapLibre for local development.
 
-## 3. Datasets & Data Preparation
+## Sarvam Private Reasoning Architecture
 
-TALON uses a combination of publicly available identity-document datasets and project-specific document samples for training and evaluation. The available datasets provide authentic document images, document-type variations, OCR/MRZ samples, and existing examples relevant to document analysis. Since publicly available datasets do not fully cover the required Indian document-fraud scenarios, additional samples are prepared specifically for the project.
+The model does not receive database credentials, object-store credentials, or direct access to government systems. It receives a bounded evidence packet prepared by TALON. It explains why a case was flagged, what evidence supports the conclusion, and which items require officer review. It does not approve, reject, alter, or delete sessions.
 
-> **Table 2 — Dataset Overview**
+## Deployment and Security Direction
 
-| Dataset Name | Document Type | Purpose | Source | Usage |
-|---|---|---|---|---|
-| - | - | - | - | - |
-| - | - | - | - | - |
-| - | - | - | - | - |
-| - | - | - | - | - |
-| - | - | - | - | - |
-| - | - | - | - | - |
+For local development, TALON runs as a Vite frontend and FastAPI backend. For a serious pilot, the system should be deployed with isolated services, encrypted storage, backend-only secrets, and observability.
 
-### 3.1 Dataset Collection and Preparation
+| Area | Recommended production approach |
+|---|---|
+| Frontend hosting | Static build behind HTTPS and authenticated access |
+| Backend | Dockerized FastAPI service behind an internal load balancer |
+| Object storage | AWS S3, self-hosted MinIO, or NIC MeghRaj-compatible storage with encryption and object hashing |
+| Database | MySQL 8/PostgreSQL with encrypted sensitive fields and append-only audit writes |
+| Secrets | AWS Secrets Manager, Parameter Store, or equivalent government-approved secret store |
+| Face comparison | AWS Rekognition or approved biometric service called only from backend |
+| Network | Private subnets, no public database, tight security groups, VPC endpoints where available |
+| Monitoring | CloudWatch or Prometheus/Grafana for service health, latency, errors, and model availability |
+| AWS activity audit | CloudTrail for AWS API activity |
+| Application audit | TALON hash-chained audit ledger for officer actions and session events |
+| Retention | Fixed retention periods, legal hold support, verified deletion jobs |
 
-The collected data is organized according to document type and the specific TALON module for which it is required. Images are cleaned, resized, cropped, and standardized where necessary before being used for model development.
+## Repository Structure
 
-Authentic documents are retained as genuine reference samples. Where required, different orientations, lighting conditions, image quality, and other capture variations are introduced to improve robustness against real-world document images.
+```text
+mainapp/
+  backend/      FastAPI service, OCR, model inference, Rekognition, CSII service
+  frontend/     React/Vite officer interface, dashboard, upload flow, CSII, Geopol
+  models/       Aadhaar and passport model notebooks
+  database/     MySQL schema package and database design documentation
+  docs/         Demo and architecture notes
+```
 
-> **Figure 3 — Dataset Organization & Preparation**  
-> *Show: Public Datasets + Project-Specific Samples → Data Collection → Quality Filtering → Cropping / Resizing → Normalization & Formatting → Module-Specific Dataset Preparation.*
+## Local Development
 
-> **Table 3 — Dataset Distribution**
+Backend:
 
-| Document Class | Authentic Samples | Tampered Samples | Training | Validation | Testing |
-|---|---:|---:|---:|---:|---:|
-| - | - | - | - | - | - |
-| - | - | - | - | - | - |
-| - | - | - | - | - | - |
-| - | - | - | - | - | - |
-| **Total** | **-** | **-** | **-** | **-** | **-** |
+```powershell
+cd backend
+python main.py
+```
 
-### 3.2 Tampered Document Dataset
+Frontend:
 
-Tampered samples are **not taken directly from the online datasets**. Instead, authentic document images obtained from the available datasets and project-specific sources are used as the base, and controlled modifications are performed externally to create synthetic tampered samples.
+```powershell
+cd frontend
+npm install
+npm run dev
+```
 
-The modifications cover relevant fraud scenarios such as **text alteration, face replacement, signature manipulation, stamp/seal modification, and other document-region changes**. Both noticeable and subtle variations are created to provide different levels of manipulation difficulty.
+The frontend expects:
 
-> **Table 4 — Tampering Categories**
+```env
+VITE_API_URL=http://localhost:8000
+VITE_API_TOKEN=veriquickx-secret-token-change-in-production
+```
 
-| Tampering Type | Affected Region | Description | Number of Samples |
-|---|---|---|---:|
-| Text Tampering | - | - | - |
-| Face Tampering | - | - | - |
-| Signature Tampering | - | - | - |
-| Stamp/Seal Tampering | - | - | - |
-| Other Manipulation | - | - | - |
-| **Total** | - | - | **-** |
+The backend expects matching `API_TOKEN`, Poppler/Tesseract configuration for OCR, and optional AWS Rekognition credentials for face comparison.
 
-### 3.3 Preprocessing and Dataset Splitting
+## Current Limitations
 
-Before training, the data is standardized according to the requirements of each model. Preprocessing may include resizing, normalization, cropping, orientation correction, and quality filtering.
+| Area | Honest status |
+|---|---|
+| Government integrations | Planned only. UIDAI, passport authority, airport systems, NATGRID, and watchlists are not connected in this prototype. |
+| CSII | Synthetic demo records only. No real Aadhaar, immigration, or intelligence system is queried. |
+| Geopol | Demo checkpoint data and travel trails. Not connected to live passenger movement feeds. |
+| Forensic tampering | UI and schema path exist, but a real detector is not connected to the active processing service yet. |
+| Sarvam private deployment | Planned architecture. The final deployment model, licence, and isolation mode must be confirmed with the provider and authority. |
+| Model metrics | Passport notebook metrics are available. Aadhaar metrics need a clean exported evaluation run before formal claims. |
 
-The datasets are divided into training, validation, and test sets while keeping different modified versions of the same original document within the same split. This prevents data leakage and ensures that evaluation is performed on documents that the model has not effectively seen during training.
+## Demo Q&A Preparation
 
-> **Figure 4 — Dataset Splitting Strategy**  
-> *Show document-level grouping → train/validation/test split.*
+| Question | Strong answer |
+|---|---|
+| Is TALON making the final border decision? | No. TALON is officer decision support. It extracts evidence, highlights inconsistencies, and records decisions, but the authorized officer remains responsible. |
+| Is CSII connected to real Aadhaar or NATGRID data? | Not in the prototype. The demo uses synthetic graph records. The architecture is ready for secure API integration only after legal and authority approval. |
+| Is the audit ledger a blockchain? | No. It is a hash-chained audit ledger. It is cheaper, simpler, and honest: every event links to the previous event hash, making edits detectable. |
+| Can AWS Rekognition return a face hash? | No. CompareFaces returns similarity and face bounding details, not a reusable biometric hash. TALON uses opaque evidence references instead of pretending to store face hashes. |
+| What happens if one module fails? | TALON marks that module unavailable or not run. It does not silently count unavailable modules as pass. |
+| Why use Sarvam 105B? | Sarvam 105B is positioned as a reasoning layer for Indian context and natural-language investigation. TALON uses it to explain authorized records, not to directly verify documents. |
+| What is production-ready now? | The application demonstrates the workflow, dashboard, CSII/Geopol concepts, OCR/MRZ path, Rekognition integration path, and audit-chain concept. Full production requires backend database integration, real forensic model, deployment hardening, and authorized data-source integrations. |
 
-## 4. Evaluation Results
+## Project Identity
 
-TALON is evaluated independently across its major verification components using unseen test data. Each module is measured using task-specific metrics to assess its ability to correctly identify documents, extract information, detect manipulation, and verify identity.
-
-### 4.1 Document Classification
-
-The document classification models are evaluated on their ability to correctly identify supported document types from unseen test images.
-
-**Metrics:** Accuracy, Precision, Recall, and F1-Score.
-
-### 4.2 OCR & MRZ Evaluation
-
-OCR is evaluated based on the accuracy of extracted text and important document fields. For documents containing an MRZ, extraction accuracy and validation performance are evaluated separately.
-
-### 4.3 Tampering Detection
-
-The tampering detection model is evaluated using authentic and externally generated tampered document samples across the defined manipulation categories.
-
-**Metrics:** Precision, Recall, F1-Score, and ROC-AUC.
-
-### 4.4 Face Verification
-
-Face verification is evaluated using matching and non-matching document/person pairs at the selected verification threshold.
-
-**Metrics:** FAR, FRR, and TAR at a defined FAR.
-
-### 4.5 Evaluation Summary
-
-The final results will be updated as the individual models and complete TALON pipeline are finalized. Reported metrics will be based on the held-out test sets and will be accompanied by the corresponding dataset size and experimental conditions.
-
-> **Table 5 — TALON Evaluation Summary**
-
-| Module | Primary Metric | Result |
-|---|---|---:|
-| Document Classification | F1-Score | — |
-| OCR | Field Accuracy | — |
-| MRZ | Validation Rate | — |
-| Tampering Detection | F1-Score | — |
-| Face Verification | TAR @ FAR | — |
-
-## 5. Web Application & Usage
-
-TALON provides a web-based interface for performing identity-document screening through a single workflow. Users can upload a supported document and view its classification, extracted information, tampering analysis, MRZ validation, face verification, and overall screening result from the dashboard.
-
-### 5.1 Verification Dashboard
-
-The dashboard presents the results of the different verification modules in a structured view, allowing the user to review detected document information, inconsistencies, tampering indicators, and identity-verification results.
-
-> **Figure 5 — TALON Verification Dashboard**  
-> *Add actual TALON application screenshot here.*
-
-### 5.2 Screening Result
-
-TALON combines the available verification signals and presents an overall assessment indicating whether the document appears consistent or requires further investigation. The system is intended to support authorized personnel rather than replace official verification procedures.
-
-## 6. System Architecture & Deployment
-
-TALON follows a modular architecture in which the web interface, backend services, AI models, document-processing modules, and verification services operate as separate components. This structure allows individual models and services to be updated without redesigning the complete system.
-
-### 6.1 Application Architecture
-
-The frontend provides the user interface for document submission and result visualization. The backend manages requests, coordinates the required AI modules, processes verification results, and returns the final assessment to the dashboard.
-
-### 6.2 Deployment
-
-TALON can be deployed as a web application with the AI processing and sensitive credentials maintained on the server side. The modular design supports local or cloud-based deployment depending on operational requirements and available computing resources.
-
-## 7. Security & Limitations
-
-TALON is designed to process sensitive identity and biometric information. The system should therefore use secure communication, protected backend credentials, controlled access, and appropriate data-retention practices. Sensitive documents and personal information should not be exposed through logs or unauthorized interfaces.
-
-TALON is an AI-assisted screening system and does not independently establish legal identity or guarantee document authenticity. Model performance can be affected by image quality, unseen document formats, new forgery techniques, and limited availability of representative real-world fraudulent data. Results should therefore be treated as decision-support evidence and verified through authorized procedures when required.
-
-> **Figure 6 — TALON Security & Decision Boundary**
-
-> **Security Considerations**
-> - Secure document transmission and storage
-> - Controlled access to sensitive results
-> - Minimal retention of uploaded documents
-> - No sensitive information in application logs
-
-## 8. Future Scope
-
-- Expansion to additional Indian and foreign identity documents.
-- Improved detection of advanced and previously unseen forgery techniques.
-- Integration with authorized identity/document verification services.
-- Liveness detection for stronger biometric verification.
-- Larger real-world datasets for continuous evaluation and improvement.
-
-## 9. License
-
-License information will be added upon final release.
-
-## 10. Contact
-
-For questions, collaboration, or further information regarding TALON, please contact the project team.
-
-**Project:** TALON  
+**Project:** TALON - Tampering and Anomaly Locator and Operational Net  
 **Event:** Smart India Hackathon 2026  
-**Problem Statement:** PS 26188 — AI-Based Fake Identity & Document Screening System
+**Problem Statement:** AI-Based Fake Identity and Document Screening System  
+**Technology Bucket:** AI/ML, Cloud Computing, Cybersecurity, Graph Intelligence
