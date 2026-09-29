@@ -33,6 +33,8 @@ Module 2 Document validators and classifiers
 Module 3 Tampering and Anomaly Detection
 Module 4 Face verification module 
 Module 5 Integrations with govt sources 
+How to setup locally
+FAQ
 
 
 ## Introduction
@@ -62,7 +64,18 @@ The system is designed as decision support. It does not replace an authorized of
 | Database | Separate MySQL schema package under `database/` | MySQL/PostgreSQL system of record integrated into backend |
 | Audit | Frontend hash-chained audit events for demo | Backend append-only hash-chained audit ledger with external anchoring |
 
-## Model and Evaluation Status
+
+# OCR 
+
+
+
+# Document classifiers 
+
+
+
+# TAMPERING DETECTION MODELS 
+
+# Deep Learning models metrices
 
 TALON should report only metrics that are actually produced by the project notebooks or repeatable evaluation runs. The tables below separate confirmed notebook output from metrics that still need a clean exported evaluation run.
 
@@ -136,6 +149,9 @@ Sarvam 105B is planned as the private reasoning layer for officer questions, ses
 <img width="997" height="663" alt="image" src="https://github.com/user-attachments/assets/e1b901c8-8b83-4a7a-9506-c5a69ac420a9" />
 
 
+# INTEGRATIONS
+
+
 ## Tamper-Evident Audit Ledger
 
 TALON now implements a lightweight hash-chained audit ledger for local audit events. This is intentionally not described as a blockchain. It is a practical tamper-evident ledger:
@@ -159,8 +175,6 @@ This gives TALON a defensible cybersecurity feature for audit integrity. If a pa
 
 ## Data Model and Database schema 
 <img width="998" height="506" alt="image" src="https://github.com/user-attachments/assets/4b9fee21-7225-4df2-944f-6c2c39112c24" />
-
-
 
 
 
