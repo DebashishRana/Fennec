@@ -10,14 +10,14 @@
 <hr>
 
 <div align="center">
-  <a href="https://www.youtube.com/watch?v=REPLACE_WITH_VIDEO_ID">
-    <img src="https://img.shields.io/badge/Watch%20App%20Demo-FF0000?style=for-the-badge&logo=youtube&logoColor=white" alt="Watch App Demo" />
+  <a href="https://youtu.be/Hxg2021K0fc">
+    <img src="https://img.shields.io/badge/Watch%20App%20Demo-FF0000?style=for-the-badge&logo=youtube&logoColor=white" alt="Watch App Demo with Timestaps " />
   </a>
   <a href="https://www.notion.so/REPLACE_WITH_TALON_MODULE_DOCUMENTATION">
     <img src="https://img.shields.io/badge/Module--Wise%20Documentation-000000?style=for-the-badge&logo=notion&logoColor=white" alt="Module-wise documentation" />
   </a>
   <br>
-  <sub>Video timestamps are available in the YouTube description.</sub>
+  <p><strong>Video timestamps are available in the YouTube description.</p>
 </div>
 
 
@@ -56,7 +56,7 @@ TALON addresses these challenges through a modular AI pipeline:
 | High passenger volume | Single guided verification flow with dashboard review |
 | Weak auditability | Hash-chained audit events and structured session records |
 
-## System Overview
+## Applicaition Workflow 
 
 <img width="1027" height="646" alt="Picture1" src="https://github.com/user-attachments/assets/aef80e5a-9e83-426e-8449-e9378d8b73c0" />
 
@@ -105,40 +105,16 @@ TALON should report only metrics that are actually produced by the project noteb
 
 Source: `models/Passport classfier/passport_classifier.ipynb`
 
-| Metric | Value |
-|---|---:|
-| Test accuracy | 98.40% |
-| Test samples | 187 |
-| Non-passport support | 67 |
-| Passport support | 120 |
-| Macro precision | 0.98 |
-| Macro recall | 0.98 |
-| Macro F1-score | 0.98 |
-| Weighted precision | 0.98 |
-| Weighted recall | 0.98 |
-| Weighted F1-score | 0.98 |
+<img width="1233" height="497" alt="image" src="https://github.com/user-attachments/assets/ac4f1be8-3366-4dc2-a98e-b5444c43a993" />
 
-Per-class results from the notebook:
 
-| Class | Precision | Recall | F1-score | Support |
-|---|---:|---:|---:|---:|
-| Non-Passport | 0.98 | 0.97 | 0.98 | 67 |
-| Passport | 0.98 | 0.99 | 0.99 | 120 |
+## Per-class results from the notebook:
+<img width="1197" height="122" alt="image" src="https://github.com/user-attachments/assets/871e15b3-622e-413b-9520-456ae3dfaa5c" />
 
-Training trace:
 
-| Epoch | Train accuracy | Validation accuracy | Validation loss |
-|---:|---:|---:|---:|
-| 1 | 62.75% | 68.67% | 0.6025 |
-| 2 | 75.84% | 80.67% | 0.3430 |
-| 3 | 91.44% | 84.00% | 0.3480 |
-| 4 | 94.80% | 96.00% | 0.1299 |
-| 5 | 96.48% | 97.33% | 0.1105 |
-| 6 | 98.32% | 98.00% | 0.1025 |
-| 7 | 99.16% | 97.33% | 0.0723 |
-| 8 | 98.66% | 98.67% | 0.0588 |
-| 9 | 98.83% | 94.00% | 0.1797 |
-| 10 | 98.15% | 98.67% | 0.0600 |
+## Training trace:
+
+<img width="1195" height="442" alt="image" src="https://github.com/user-attachments/assets/b7b698b2-db61-44d0-b713-7e4d738636d8" />
 
 ### Aadhaar Classifier - Notebook and Runtime Status
 
