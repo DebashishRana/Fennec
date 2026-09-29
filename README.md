@@ -40,21 +40,6 @@ TALON is an AI-assisted identity and travel-document screening platform for bord
 
 The system is designed as decision support. It does not replace an authorized officer, immigration database, passport authority, or legal verification process. TALON surfaces evidence, inconsistencies, confidence scores, and audit records so that a human reviewer can make faster and more consistent screening decisions.
 
-## Problem Statement
-
-Border checkpoints process passports, visas, national identity documents, driving licences, permits, and other travel documents under high passenger volume. Current verification workflows often depend on manual inspection, visual judgement, and basic database lookups. This creates gaps when documents contain subtle text changes, photo replacement, forged stamps, inconsistent MRZ fields, or identity impersonation.
-
-TALON addresses these challenges through a modular AI pipeline:
-
-| Challenge | TALON response |
-|---|---|
-| Fake passports or visas | Document classification, OCR, MRZ parsing, and rule-based consistency checks |
-| Altered photographs | Document portrait extraction and face comparison against live capture |
-| Modified dates or document numbers | OCR/MRZ field comparison and validation |
-| Tampered stamps or document regions | Planned forensic/tampering detector module |
-| Multiple identities used by the same person | CSII graph layer using privacy-preserving evidence references |
-| High passenger volume | Single guided verification flow with dashboard review |
-| Weak auditability | Hash-chained audit events and structured session records |
 
 ## Applicaition Workflow 
 
@@ -76,26 +61,6 @@ TALON addresses these challenges through a modular AI pipeline:
 | Storage | Browser/local demo store and optional Azure Blob staging | S3/MinIO/NIC storage with encryption, object hashes, retention and legal hold |
 | Database | Separate MySQL schema package under `database/` | MySQL/PostgreSQL system of record integrated into backend |
 | Audit | Frontend hash-chained audit events for demo | Backend append-only hash-chained audit ledger with external anchoring |
-
-## Verification Workflow
-
-An officer starts a verification session, submits document evidence, and captures the live face image. The backend coordinates classification, OCR extraction, MRZ parsing, and face comparison, then returns an evidence summary with module-level confidence and review signals. The officer can verify, flag, or reject the session; that action is then recorded in the audit trail.
-
-## What We Can Visualize
-
-The project already has enough structured data to present meaningful graphs and tables without inventing external records.
-
-| Visualization | Source in project | What it shows |
-|---|---|---|
-| Module pipeline status | Saved verification sessions | Classification, OCR, MRZ, face, CSII status per session |
-| Risk distribution | `riskLevel`, `riskScore`, decision status | Low, medium, high, rejected, manual-review counts |
-| Session activity chart | Dashboard service records | Daily or hourly verification volume |
-| Checkpoint heatmap | `GeoIntelPage` synthetic checkpoint data | Hot zones across Indian checkpoint locations |
-| Person travel trail | Geopol demo data and future session travel events | Check-in/check-out path over time |
-| CSII graph | `csiiMockResult` and React Flow UI | Links between face evidence reference, document, Aadhaar demo layer, and travel events |
-| OCR/MRZ evidence table | `documentAnalysis` object | Extracted fields, raw OCR text, parsed MRZ, MRZ issues |
-| Face comparison panel | `faceVerification` and session media | Document portrait, live capture, similarity confidence |
-| Audit chain table | RBAC audit store | Event index, actor, action, previous hash, event hash, chain status |
 
 ## Model and Evaluation Status
 
