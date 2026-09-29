@@ -46,7 +46,9 @@ export default function DocumentResultsStep({ step }) {
       <button className="upload-primary" type="button" disabled={!analysis} onClick={() => navigate('/upload/face')}>Continue to face and forensic verification</button>
     </>}>
       {error && <p className="upload-error" role="alert">{error}</p>}
-      {!analysis && !error && <div className="document-loading" role="status">Analyzing the uploaded document...</div>}
+      {!analysis && !error && <div className="document-loading" role="status">
+        {session.documentType === 'PASSPORT' ? 'Performing OCR and MRZ...' : 'Performing OCR...'}
+      </div>}
       {analysis && <div className="document-results-layout">
         <div className="document-image-panel">
           {(() => {

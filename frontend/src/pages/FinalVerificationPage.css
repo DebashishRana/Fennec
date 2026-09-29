@@ -330,15 +330,15 @@
 
 .fv-model-bars {
   display: grid;
-  gap: 13px;
-  margin-top: 16px;
+  gap: 15px;
+  margin-top: 18px;
 }
 
 .fv-model-row {
   align-items: center;
   display: grid;
-  gap: 12px;
-  grid-template-columns: 190px minmax(0, 1fr) 42px 72px;
+  gap: 14px;
+  grid-template-columns: 190px minmax(0, 1fr) 44px 78px;
 }
 
 .fv-model-row span {
@@ -348,26 +348,28 @@
 }
 
 .fv-model-row div {
-  background: #eef2f7;
-  border-radius: 999px;
-  height: 16px;
+  background:
+    linear-gradient(90deg, transparent 0, transparent calc(25% - 1px), #e5e7eb calc(25% - 1px), #e5e7eb 25%, transparent 25%),
+    linear-gradient(90deg, transparent 0, transparent calc(50% - 1px), #e5e7eb calc(50% - 1px), #e5e7eb 50%, transparent 50%),
+    linear-gradient(90deg, transparent 0, transparent calc(75% - 1px), #e5e7eb calc(75% - 1px), #e5e7eb 75%, transparent 75%),
+    #edf2f7;
+  border-radius: 6px;
+  height: 22px;
   overflow: hidden;
 }
 
 .fv-model-row i {
-  background: #0ea5e9;
+  background: #0f9bd7;
+  border-radius: inherit;
   display: block;
   height: 100%;
 }
 
-.fv-model-row.good i { background: #059669; }
-.fv-model-row.review i { background: #d97706; }
-.fv-model-row.critical i { background: #dc2626; }
-.fv-model-row.pending i { background: #94a3b8; }
+.fv-model-row.idle i { background: #0f9bd7; }
 
 .fv-model-row strong {
   color: #475569;
-  font-size: 12px;
+  font-size: 13px;
   text-align: right;
 }
 

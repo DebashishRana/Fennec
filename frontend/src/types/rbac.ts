@@ -72,5 +72,9 @@ export interface AuditEvent {
   targetId?: string
   message: string
   createdAt: string
+  chainIndex?: number
+  previousEventHash?: string
+  payloadHash?: string
+  eventHash?: string
   metadata?: Record<string, unknown>
 }

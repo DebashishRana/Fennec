@@ -12,15 +12,15 @@ const validMrz = {
   status: 'valid',
   format: 'TD3',
   issues: [],
-  lines: ['P<INDWHIRIGE<<MINT<<<<<<<<<<<<<<<<<<<<<<<<<<<', 'ZA2706582IND0703019F3501012<<<<<<<<<<<<<<02'],
+  lines: ['P<INDRANA<<DEBASHISH<<<<<<<<<<<<<<<<<<<<<<<<<', 'ZA2706582IND0703019M3510096<<<<<<<<<<<<<<02'],
   parsed: {
-    given_names: 'MINT',
-    surname: 'WHIRIGE',
+    given_names: 'DEBASHISH',
+    surname: 'RANA',
     passport_number: 'ZA270658',
     nationality: 'IND',
     birth_date: '070301',
-    sex: 'F',
-    expiry_date: '350101'
+    sex: 'M',
+    expiry_date: '351009'
   },
   check_digits: { passport_number: 2 },
   ocr_consistency: { visible_to_mrz_match: true, mismatch_fields: [] }
@@ -32,7 +32,7 @@ function passportSession(extra = {}) {
     documentType: 'PASSPORT',
     documentAnalysis: {
       metadata: {
-        extracted_text: 'MINT WHIRIGE ZA270658 IND',
+        extracted_text: 'MINT WHIRIGE ZA270658 IND P<INDRANA<<DEBASHISH',
         holder_name: 'Mint Whirige',
         passport_number: 'ZA270658',
         nationality: 'IND',
@@ -59,10 +59,10 @@ function passportSession(extra = {}) {
   }
 }
 
-test('subject extraction matches OCR metadata before MRZ fallback', () => {
+test('passport subject extraction prefers structured MRZ name over noisy OCR metadata', () => {
   const fields = extractSubjectFields(passportSession().documentAnalysis)
   assert.deepEqual(fields, {
-    name: 'Mint Whirige',
+    name: 'Debashish Rana',
     dob: '2007-03-01',
     documentNumber: 'ZA270658',
     nationality: 'IND'

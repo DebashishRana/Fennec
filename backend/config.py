@@ -3,7 +3,10 @@ Configuration settings for VeriQuickX
 """
 
 import os
+from pathlib import Path
 from pydantic_settings import BaseSettings
+
+BACKEND_ENV_FILE = Path(__file__).with_name(".env")
 
 class Settings(BaseSettings):
     # Dashboard receives verification events and powers the logs/statistics views.
@@ -22,9 +25,15 @@ class Settings(BaseSettings):
     # API Security
     API_TOKEN: str = os.getenv("API_TOKEN", "veriquickx-secret-token-change-in-production")
 
-    # Sarvam chat API. The key is intentionally backend-only.
+    # Ask Talon chat provider. Tokens are intentionally backend-only.
+    AI_PROVIDER: str = os.getenv("AI_PROVIDER", "huggingface")
+    HF_TOKEN: str = os.getenv("HF_TOKEN", "")
+    HF_MODEL: str = os.getenv("HF_MODEL", "HuggingFaceH4/zephyr-7b-beta")
+    HF_API_URL: str = os.getenv("HF_API_URL", "https://router.huggingface.co/v1/chat/completions")
+
+    # Sarvam chat API remains available for the future sovereign/private path.
     SARVAM_API_KEY: str = os.getenv("SARVAM_API_KEY", "")
-    SARVAM_MODEL: str = os.getenv("SARVAM_MODEL", "sarvam-m")
+    SARVAM_MODEL: str = os.getenv("SARVAM_MODEL", "sarvam-105b")
     SARVAM_API_URL: str = os.getenv("SARVAM_API_URL", "https://api.sarvam.ai/v1/chat/completions")
 
     # Local document-processing executables.  Their values are read from the
@@ -95,8 +104,7 @@ class Settings(BaseSettings):
     SENTINEL_BIOMETRIC_RETENTION_HOURS: int = int(os.getenv("SENTINEL_BIOMETRIC_RETENTION_HOURS", "12"))
     
     class Config:
-        env_file = ".env"
+        env_file = str(BACKEND_ENV_FILE)
         extra = "allow"  # Allow extra fields for migration compatibility
 
 settings = Settings()
-

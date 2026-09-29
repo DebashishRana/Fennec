@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { defaultRoles } from '../data/defaultRoles'
 import type { AuditEvent, ModuleKey, Permission, Role, User } from '../types/rbac'
+import { chainAuditEvent } from '../utils/auditHash'
 import { hashPassword, normalizeEmail, SUPER_ADMIN_PASSWORD_HASH } from '../utils/authCredentials'
 
 type RoleInput = Omit<Role, 'id' | 'createdAt'>
@@ -116,11 +117,13 @@ export const useRBACStore = create<RBACStore>()(
       },
       getUserById: id => get().users.find(user => user.id === id),
       addAuditEvent: eventInput => {
-        const event: AuditEvent = {
+        const baseEvent = {
           ...eventInput,
           id: makeId('audit'),
           createdAt: new Date().toISOString()
         }
+        const previousEvent = get().auditEvents.find(event => event.eventHash)
+        const event: AuditEvent = chainAuditEvent(baseEvent, previousEvent)
         set(state => ({ auditEvents: [event, ...state.auditEvents].slice(0, 500) }))
         return event
       },
@@ -147,18 +150,19 @@ export const useRBACStore = create<RBACStore>()(
         }
         const now = new Date().toISOString()
         const authenticatedUser = { ...user, lastLoginAt: now }
+        const auditEvent = chainAuditEvent({
+          id: makeId('audit'),
+          type: 'user.updated',
+          actorId: user.id,
+          targetId: user.id,
+          message: `${user.fullName} signed in`,
+          createdAt: now
+        }, get().auditEvents.find(event => event.eventHash))
         set(state => ({
           currentUserId: user.id,
           isAuthenticated: true,
           users: state.users.map(item => item.id === user.id ? authenticatedUser : item),
-          auditEvents: [{
-            id: makeId('audit'),
-            type: 'user.updated',
-            actorId: user.id,
-            targetId: user.id,
-            message: `${user.fullName} signed in`,
-            createdAt: now
-          }, ...state.auditEvents].slice(0, 500)
+          auditEvents: [auditEvent, ...state.auditEvents].slice(0, 500)
         }))
         return { success: true, user: authenticatedUser }
       },

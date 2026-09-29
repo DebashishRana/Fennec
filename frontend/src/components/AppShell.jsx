@@ -12,7 +12,6 @@ import {
   Plug,
   ScanLine,
   Settings,
-  ShieldCheck,
   UserCog,
   Users
 } from 'lucide-react'
@@ -86,10 +85,8 @@ export default function AppShell({ children, isDarkMode, onToggleTheme }) {
     <div className={`app-shell ${collapsed ? 'collapsed' : ''}`}>
       <aside className="app-sidebar" aria-label="Primary navigation">
         <div className="app-brand">
-          <div className="app-brand-mark"><ShieldCheck size={17} /></div>
-          <div>
-            <strong>TALON</strong>
-            <small>Border ops</small>
+          <div className="app-brand-mark">
+            <img src="/icons/talon.jpeg" alt="Talon" />
           </div>
         </div>
 

@@ -1,19 +1,17 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import * as maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
-import { AlertTriangle, ChevronRight, Clock3, Layers, LocateFixed, MapPinned, Search } from 'lucide-react'
+import { AlertTriangle, ChevronRight, Clock3, Layers, LocateFixed, MapPinned, MoreVertical, Search } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { GEOPOL_CHECKPOINTS, GEOPOL_METRICS, GEOPOL_TRAILS, checkpointsToFeatureCollection, trailToFeatureCollection } from '../data/geopolDemoData'
 import { useSessionStore } from '../store/sessionStore'
 import './GeoIntelPage.css'
 
 const indiaBounds = [[66.2, 6.4], [99.6, 37.8]]
-const heatmapDays = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
-const heatmapMonths = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC', 'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL']
-const heatmapCells = Array.from({ length: heatmapDays.length * heatmapMonths.length }, (_, index) => ({
-  value: (index * 17 + 23) % 100,
-  label: index === 68 ? '128' : index === 125 ? '64' : ''
-}))
+const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+const heatmapPeriodLabels = { year: 'This year', month: 'This month', week: 'This week' }
+const flaggedStatuses = new Set(['FLAGGED', 'MANUAL_REVIEW', 'REJECTED'])
 
 function makeMapStyle() {
   return {
@@ -38,6 +36,116 @@ function riskClass(value) {
   return 'normal'
 }
 
+function normalizeLocation(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/^checkpoint-/, '')
+    .replace(/-?(icp|airport|checkpoint)$/g, '')
+    .replace(/\b(icp|airport|regional checkpoint|checkpoint)\b/g, '')
+    .replace(/[^a-z0-9]+/g, '')
+}
+
+function sessionMatchesCheckpoint(session, checkpoint) {
+  const selected = new Set([checkpoint.id, checkpoint.name].map(normalizeLocation).filter(Boolean))
+  return [session.checkpointId, session.checkpointName].some(value => selected.has(normalizeLocation(value)))
+}
+
+function startOfDay(value) {
+  const date = new Date(value)
+  date.setHours(0, 0, 0, 0)
+  return date
+}
+
+function addDays(value, count) {
+  const date = new Date(value)
+  date.setDate(date.getDate() + count)
+  return date
+}
+
+function weekdayIndex(date) {
+  return (date.getDay() + 6) % 7
+}
+
+function weekStart(value = new Date()) {
+  const date = startOfDay(value)
+  return addDays(date, -weekdayIndex(date))
+}
+
+function heatmapBounds(period, now = new Date()) {
+  if (period === 'year') {
+    const year = now.getFullYear()
+    return { start: new Date(year, 0, 1), end: new Date(year + 1, 0, 1) }
+  }
+  if (period === 'month') {
+    const year = now.getFullYear()
+    const month = now.getMonth()
+    return { start: new Date(year, month, 1), end: new Date(year, month + 1, 1) }
+  }
+  const start = weekStart(now)
+  return { start, end: addDays(start, 7) }
+}
+
+function emptyMatrix(rows, columns) {
+  return rows.map((label, row) => ({
+    label,
+    cells: columns.map((column, col) => ({ id: `${label}-${column}-${row}-${col}`, value: 0 }))
+  }))
+}
+
+function buildHeatmapData(sessions, checkpoint, period) {
+  const now = new Date()
+  const bounds = heatmapBounds(period, now)
+  const relevant = sessions.filter(session => {
+    const timestamp = Date.parse(session.createdAt)
+    return Number.isFinite(timestamp) &&
+      timestamp >= bounds.start.getTime() &&
+      timestamp < bounds.end.getTime() &&
+      sessionMatchesCheckpoint(session, checkpoint)
+  })
+  const flagged = relevant.filter(session => flaggedStatuses.has(session.status))
+
+  const columns = period === 'year'
+    ? monthLabels
+    : period === 'month'
+      ? Array.from({ length: Math.ceil((new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() + weekdayIndex(new Date(now.getFullYear(), now.getMonth(), 1))) / 7) }, (_, index) => `W${index + 1}`)
+      : Array.from({ length: 7 }, (_, index) => {
+        const date = addDays(bounds.start, index)
+        return `${dayLabels[index]} ${date.getDate()}`
+      })
+  const rows = period === 'week' ? ['00-06', '06-12', '12-18', '18-24'] : dayLabels
+
+  const build = source => {
+    const matrix = emptyMatrix(rows, columns)
+    for (const session of source) {
+      const date = new Date(session.createdAt)
+      let column = 0
+      let row = 0
+      if (period === 'year') {
+        column = date.getMonth()
+        row = weekdayIndex(date)
+      } else if (period === 'month') {
+        column = Math.floor((date.getDate() - 1 + weekdayIndex(new Date(date.getFullYear(), date.getMonth(), 1))) / 7)
+        row = weekdayIndex(date)
+      } else {
+        column = Math.max(0, Math.min(6, Math.floor((startOfDay(date).getTime() - bounds.start.getTime()) / 86400000)))
+        row = Math.max(0, Math.min(3, Math.floor(date.getHours() / 6)))
+      }
+      if (matrix[row]?.cells[column]) matrix[row].cells[column].value += 1
+    }
+    const max = Math.max(1, ...matrix.flatMap(item => item.cells.map(cell => cell.value)))
+    return { rows: matrix, max, total: source.length }
+  }
+
+  return {
+    columns,
+    rows,
+    total: relevant.length,
+    flaggedTotal: flagged.length,
+    overall: build(relevant),
+    flagged: build(flagged)
+  }
+}
+
 function trailCoordinates(trail) {
   return trail?.routeCoordinates || trail?.events?.map(event => event.coordinates) || []
 }
@@ -55,22 +163,49 @@ function trailMatches(trail, query) {
   ].some(value => String(value || '').toLowerCase().includes(term))
 }
 
+function HeatmapMatrix({ title, subtitle, data, tone }) {
+  return (
+    <article className={`geopol-activity-heatmap ${tone}`}>
+      <header>
+        <div><h3>{title}</h3><p>{subtitle}</p></div>
+        <strong>{data.total}</strong>
+      </header>
+      <div className="geo-heatmap-table" style={{ '--geo-heat-columns': data.columns.length }}>
+        <div className="geo-heatmap-corner" />
+        {data.columns.map(column => <b className="geo-heatmap-column" key={column}>{column}</b>)}
+        {data.overall.rows.map(row => (
+          <React.Fragment key={row.label}>
+            <b className="geo-heatmap-row-label">{row.label}</b>
+            {row.cells.map(cell => {
+              const level = cell.value ? Math.max(1, Math.ceil(cell.value / data.overall.max * 4)) : 0
+              return <span className={`geo-heat-cell level-${level}`} title={`${cell.value} ${title.toLowerCase()}`} key={cell.id}>{cell.value || ''}</span>
+            })}
+          </React.Fragment>
+        ))}
+      </div>
+    </article>
+  )
+}
+
 export default function GeoIntelPage() {
   const [searchParams] = useSearchParams()
   const identityId = searchParams.get('identity')
-  const linkedSession = useSessionStore(state => state.sessions.find(item => item.id === identityId))
+  const sessions = useSessionStore(state => state.sessions)
+  const linkedSession = sessions.find(item => item.id === identityId)
   const mapRef = useRef(null)
   const containerRef = useRef(null)
   const [metric, setMetric] = useState('risk')
   const [mode, setMode] = useState('checkpoint')
   const [verificationId, setVerificationId] = useState('')
   const [showHeatmap, setShowHeatmap] = useState(true)
+  const [heatmapPeriod, setHeatmapPeriod] = useState('year')
   const [selectedCheckpointId, setSelectedCheckpointId] = useState('raxaul-icp')
   const [selectedTrailId, setSelectedTrailId] = useState('talon-20260923-raxaul-jammu')
   const selectedCheckpoint = GEOPOL_CHECKPOINTS.find(item => item.id === selectedCheckpointId) || GEOPOL_CHECKPOINTS[0]
   const filteredTrails = useMemo(() => GEOPOL_TRAILS.filter(trail => trailMatches(trail, verificationId)), [verificationId])
   const activeTrail = filteredTrails.find(trail => trail.id === selectedTrailId) || filteredTrails[0] || GEOPOL_TRAILS[0]
   const activeMetric = GEOPOL_METRICS.find(item => item.id === metric) || GEOPOL_METRICS[1]
+  const activityHeatmap = useMemo(() => buildHeatmapData(sessions, selectedCheckpoint, heatmapPeriod), [sessions, selectedCheckpoint, heatmapPeriod])
   const totals = useMemo(() => GEOPOL_CHECKPOINTS.reduce((acc, item) => ({
     activity: acc.activity + item.activity,
     risk: acc.risk + item.risk,
@@ -226,7 +361,7 @@ export default function GeoIntelPage() {
       {mode === 'movement' && <label className="geopol-search-control"><Search size={15} /><input value={verificationId} onChange={event => setVerificationId(event.target.value)} placeholder="Search verification or route" aria-label="Search verification or route" /></label>}
     </section>
 
-    <main className="geopol-workspace">
+    <main className={`geopol-workspace ${mode === 'heatmap' ? 'heatmap-mode' : ''}`}>
       <section className="geopol-map-panel">
         <div ref={containerRef} className="geopol-map" />
         <div className="geopol-map-caption"><LocateFixed size={14} /> Demo checkpoint coordinates. No live government feed is connected.</div>
@@ -254,16 +389,22 @@ export default function GeoIntelPage() {
         </section>}
 
         {mode === 'heatmap' && <section className="geopol-heatmap-card">
-          <span className="geopol-card-label">Heatmap analysis</span>
-          <div className="geopol-heatmap-scroll">
-            <div className="geopol-heatmap-grid" aria-label="Verification activity heatmap">
-              <div className="geopol-heatmap-main">
-                <div className="geopol-heatmap-cells">{heatmapCells.map((cell, index) => <span className={`heatmap-cell heatmap-level-${Math.min(4, Math.floor(cell.value / 20))}`} key={index}>{cell.label}</span>)}</div>
-                <div className="geopol-heatmap-months">{heatmapMonths.map((month, index) => <b key={`${month}-${index}`}>{month}</b>)}</div>
-              </div>
-              <div className="geopol-heatmap-days">{heatmapDays.map(day => <b key={day}>{day}</b>)}</div>
-            </div>
+          <header className="geopol-heatmap-head">
+            <div><span className="geopol-card-label">Heatmap analysis</span><h2>Activity</h2><p>{selectedCheckpoint.name} · recorded browser sessions</p></div>
+            <label><select value={heatmapPeriod} onChange={event => setHeatmapPeriod(event.target.value)} aria-label="Heatmap period">
+              <option value="year">This year</option>
+              <option value="month">This month</option>
+              <option value="week">This week</option>
+            </select></label>
+            <button type="button" aria-label="Heatmap options"><MoreVertical size={17} /></button>
+          </header>
+          <div className="geopol-heatmap-summary">
+            <span><strong>{activityHeatmap.total}</strong>Total sessions</span>
+            <span><strong>{activityHeatmap.flaggedTotal}</strong>Flagged sessions</span>
+            <span><strong>{heatmapPeriodLabels[heatmapPeriod]}</strong>Period</span>
           </div>
+          <HeatmapMatrix title="Overall sessions" subtitle="Verification sessions by selected period" data={{ ...activityHeatmap, overall: activityHeatmap.overall, total: activityHeatmap.total }} tone="sessions" />
+          <HeatmapMatrix title="Flagged sessions" subtitle="Manual review, flagged, and rejected sessions" data={{ ...activityHeatmap, overall: activityHeatmap.flagged, total: activityHeatmap.flaggedTotal }} tone="flagged" />
         </section>}
 
         {mode === 'movement' && <section className="geopol-trail">

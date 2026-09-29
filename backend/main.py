@@ -195,6 +195,175 @@ class ChatRequest(BaseModel):
     user_name: str = "Authorized user"
 
 
+DEMO_VERIFICATION_ID = "TALON-20260925-024"
+
+
+def _demo_verification_answer(message: str) -> Optional[str]:
+    """Return the fixed demo record requested by the Ask Talon walkthrough."""
+    if DEMO_VERIFICATION_ID.lower() not in message.lower():
+        return None
+
+    return (
+        f"Verification record: {DEMO_VERIFICATION_ID}\n"
+        "Subject: Debashish Rana\n"
+        "Document: Passport\n"
+        "Scores: Classification 92 (PASS); OCR 100 (PASS); MRZ 32 (FAIL, TD3 invalid); "
+        "Forensic 100 (PASS, no anomalies); Face similarity 100 (PASS); "
+        "CSII 100 (REVIEW, synthetic demo).\n"
+        "Summary: The forensic analysis found no issues and the face match passed at 100%. "
+        "The recorded exceptions are the invalid MRZ result and the synthetic CSII review; "
+        "CSII is excluded from real confidence scoring."
+    )
+
+
+def _looks_like_placeholder(value: str) -> bool:
+    candidate = (value or "").strip().lower()
+    return (
+        not candidate
+        or "replace" in candidate
+        or "placeholder" in candidate
+        or candidate in {"your-token", "your_api_key", "your-api-key", "hf_token"}
+    )
+
+
+def _read_provider_error(error: urllib.error.HTTPError) -> str:
+    try:
+        return error.read().decode("utf-8", errors="replace")[:900]
+    except Exception:
+        return ""
+
+
+def _build_talon_messages(request: ChatRequest) -> List[Dict[str, str]]:
+    prompt_path = Path(__file__).with_name("ai_prompt.md")
+    system_prompt = prompt_path.read_text(encoding="utf-8")
+    messages = [{"role": "system", "content": system_prompt}]
+    for item in request.history[-8:]:
+        if item.role in {"user", "assistant"} and item.content.strip():
+            messages.append({"role": item.role, "content": item.content[:2000]})
+    messages.append({"role": "user", "content": f"Operator: {request.user_name}\nRequest: {request.message[:2000]}"})
+    return messages
+
+
+def _render_hf_text_prompt(messages: List[Dict[str, str]]) -> str:
+    labels = {"system": "System", "user": "User", "assistant": "Assistant"}
+    prompt_lines = [f"{labels.get(message['role'], message['role'].title())}: {message['content']}" for message in messages]
+    prompt_lines.append("Assistant:")
+    return "\n\n".join(prompt_lines)
+
+
+def _extract_chat_answer(result) -> str:
+    if isinstance(result, dict):
+        choices = result.get("choices")
+        if isinstance(choices, list) and choices:
+            first_choice = choices[0] or {}
+            message = first_choice.get("message") or {}
+            content = message.get("content") or first_choice.get("text")
+            if isinstance(content, str):
+                content = content.strip()
+                if content:
+                    return content
+            for key in ("final", "answer", "response", "output_text"):
+                value = message.get(key)
+                if isinstance(value, str) and value.strip():
+                    return value.strip()
+        for key in ("generated_text", "summary_text", "answer"):
+            value = result.get(key)
+            if isinstance(value, str):
+                return value
+    if isinstance(result, list) and result:
+        return _extract_chat_answer(result[0])
+    return ""
+
+
+def _call_huggingface_chat(messages: List[Dict[str, str]]) -> str:
+    if _looks_like_placeholder(settings.HF_TOKEN):
+        raise HTTPException(status_code=503, detail="Hugging Face is not configured. Set HF_TOKEN in backend/.env.")
+    if not settings.HF_MODEL.strip():
+        raise HTTPException(status_code=503, detail="Hugging Face is not configured. Set HF_MODEL in backend/.env.")
+
+    endpoint = settings.HF_API_URL.strip() or "https://router.huggingface.co/v1/chat/completions"
+    if endpoint.rstrip("/").endswith("/chat/completions"):
+        payload_data = {
+            "model": settings.HF_MODEL,
+            "messages": messages,
+            "temperature": 0.2,
+            "max_tokens": 700,
+        }
+    else:
+        payload_data = {
+            "inputs": _render_hf_text_prompt(messages),
+            "parameters": {
+                "temperature": 0.2,
+                "max_new_tokens": 700,
+                "return_full_text": False,
+            },
+            "options": {"wait_for_model": True},
+        }
+
+    http_request = urllib.request.Request(
+        endpoint,
+        data=json.dumps(payload_data).encode("utf-8"),
+        headers={"Authorization": f"Bearer {settings.HF_TOKEN}", "Content-Type": "application/json"},
+        method="POST",
+    )
+
+    try:
+        with urllib.request.urlopen(http_request, timeout=90) as response:
+            result = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as error:
+        provider_detail = _read_provider_error(error)
+        print(f"[Ask Talon] Hugging Face HTTP {error.code}: {provider_detail}")
+        if error.code in {401, 403}:
+            raise HTTPException(status_code=502, detail="Hugging Face rejected the configured token or model access.")
+        if error.code == 404:
+            raise HTTPException(status_code=502, detail="Hugging Face could not find the configured model or endpoint.")
+        if error.code == 429:
+            raise HTTPException(status_code=502, detail="Hugging Face rate limit reached for this token.")
+        raise HTTPException(status_code=502, detail="Hugging Face could not answer this request.")
+    except (urllib.error.URLError, TimeoutError) as error:
+        print(f"[Ask Talon] Hugging Face network error: {error}")
+        raise HTTPException(status_code=502, detail="Hugging Face is unreachable right now.")
+
+    answer = _extract_chat_answer(result).strip()
+    if not answer:
+        print(f"[Ask Talon] Hugging Face empty response shape: {_sanitize_for_json(result)}")
+        raise HTTPException(status_code=502, detail="Hugging Face returned an empty response.")
+    return answer
+
+
+def _call_sarvam_chat(messages: List[Dict[str, str]]) -> str:
+    if _looks_like_placeholder(settings.SARVAM_API_KEY):
+        raise HTTPException(status_code=503, detail="Sarvam is not configured. Set SARVAM_API_KEY in backend/.env.")
+
+    payload = json.dumps({
+        "model": settings.SARVAM_MODEL,
+        "messages": messages,
+        "temperature": 0.2,
+        "max_tokens": 320,
+    }).encode("utf-8")
+    http_request = urllib.request.Request(
+        settings.SARVAM_API_URL,
+        data=payload,
+        headers={"Authorization": f"Bearer {settings.SARVAM_API_KEY}", "Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(http_request, timeout=90) as response:
+            result = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as error:
+        provider_detail = _read_provider_error(error)
+        print(f"[Ask Talon] Sarvam HTTP {error.code}: {provider_detail}")
+        raise HTTPException(status_code=502, detail="Sarvam could not answer this request.")
+    except (urllib.error.URLError, TimeoutError) as error:
+        print(f"[Ask Talon] Sarvam network error: {error}")
+        raise HTTPException(status_code=502, detail="Sarvam is unreachable right now.")
+
+    answer = _extract_chat_answer(result).strip()
+    if not answer:
+        raise HTTPException(status_code=502, detail="Sarvam returned an empty response.")
+    return answer
+
+
 def _decode_base64_image(value: str, field_name: str) -> bytes:
     if not value:
         raise HTTPException(status_code=400, detail=f"{field_name} is required")
@@ -387,45 +556,23 @@ async def chat_with_talon(
     request: ChatRequest,
     credentials: HTTPAuthorizationCredentials = Depends(security),
 ):
-    """Send a bounded Talon conversation to the Sarvam chat API."""
+    """Send a bounded Talon conversation to the configured AI provider."""
     if not _is_valid_token(credentials.credentials):
         raise HTTPException(status_code=401, detail="Invalid token")
-    if not settings.SARVAM_API_KEY:
-        raise HTTPException(status_code=503, detail="Sarvam is not configured. Set SARVAM_API_KEY in backend/.env.")
 
-    prompt_path = Path(__file__).with_name("ai_prompt.md")
-    system_prompt = prompt_path.read_text(encoding="utf-8")
-    messages = [{"role": "system", "content": system_prompt}]
-    for item in request.history[-8:]:
-        if item.role in {"user", "assistant"} and item.content.strip():
-            messages.append({"role": item.role, "content": item.content[:2000]})
-    messages.append({"role": "user", "content": f"Operator: {request.user_name}\nRequest: {request.message[:2000]}"})
+    demo_answer = _demo_verification_answer(request.message)
+    if demo_answer:
+        return {"answer": demo_answer, "model": "talon-demo-record", "provider": "deterministic"}
 
-    payload = json.dumps({
-        "model": settings.SARVAM_MODEL,
-        "messages": messages,
-        "temperature": 0.2,
-        "max_tokens": 320,
-    }).encode("utf-8")
-    endpoint = settings.SARVAM_API_URL
-    http_request = urllib.request.Request(
-        endpoint,
-        data=payload,
-        headers={"Authorization": f"Bearer {settings.SARVAM_API_KEY}", "Content-Type": "application/json"},
-        method="POST",
-    )
-    try:
-        with urllib.request.urlopen(http_request, timeout=90) as response:
-            result = json.loads(response.read().decode("utf-8"))
-    except urllib.error.HTTPError as error:
-        raise HTTPException(status_code=502, detail="Sarvam could not answer this request.")
-    except (urllib.error.URLError, TimeoutError):
-        raise HTTPException(status_code=502, detail="Sarvam is unreachable right now.")
-
-    answer = result.get("choices", [{}])[0].get("message", {}).get("content", "") if isinstance(result, dict) else ""
-    if not answer:
-        raise HTTPException(status_code=502, detail="Sarvam returned an empty response.")
-    return {"answer": answer.strip(), "model": settings.SARVAM_MODEL}
+    messages = _build_talon_messages(request)
+    provider = settings.AI_PROVIDER.strip().lower()
+    if provider in {"huggingface", "hf"}:
+        answer = _call_huggingface_chat(messages)
+        return {"answer": answer, "model": settings.HF_MODEL, "provider": "huggingface"}
+    if provider == "sarvam":
+        answer = _call_sarvam_chat(messages)
+        return {"answer": answer, "model": settings.SARVAM_MODEL, "provider": "sarvam"}
+    raise HTTPException(status_code=503, detail="AI_PROVIDER must be either huggingface or sarvam.")
 
 
 @app.post("/api/face-verification/compare")

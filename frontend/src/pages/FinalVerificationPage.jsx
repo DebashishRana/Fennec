@@ -56,30 +56,6 @@ function statusLabel(value) {
   return String(value || 'UNMEASURED').replaceAll('_', ' ')
 }
 
-function scoreStatus(score) {
-  if (score == null) return 'Pending'
-  if (score >= 85) return 'Clear'
-  if (score >= 60) return 'Review'
-  return 'Alert'
-}
-
-function tamperTone(score) {
-  if (score == null) return 'pending'
-  if (score >= 85) return 'good'
-  if (score >= 60) return 'review'
-  return 'critical'
-}
-
-function readForensicModelScore(forensics, keys) {
-  for (const key of keys) {
-    const value = forensics?.models?.[key] ?? forensics?.[key]
-    if (Number.isFinite(Number(value?.score))) return Number(value.score)
-    if (Number.isFinite(Number(value?.confidence))) return Number(value.confidence) <= 1 ? Number(value.confidence) * 100 : Number(value.confidence)
-    if (Number.isFinite(Number(value))) return Number(value) <= 1 ? Number(value) * 100 : Number(value)
-  }
-  return null
-}
-
 function DocumentPreview({ source }) {
   if (!source) {
     return <div className="fv-empty-media"><FileText size={24} /><span>Document preview unavailable</span></div>
@@ -164,36 +140,31 @@ function LiveEvidencePanel({ model, session }) {
         </article>
       </div>
 
-      <ModelScoreCard model={model} />
+      <ModelScoreCard />
     </section>
   )
 }
 
-function ModelScoreCard({ model }) {
-  const forensics = model.session?.documentAnalysis?.forensics || {}
+function ModelScoreCard() {
   const models = [
-    { label: 'Photo tampering', keys: ['photoTampering', 'photo_tampering', 'photo'], fallback: model.face.similarity },
-    { label: 'Text tampering', keys: ['textTampering', 'text_tampering', 'text'], fallback: model.signals.find(signal => signal.id === 'ocr')?.score },
-    { label: 'Stamp and material tampering', keys: ['stampMaterialTampering', 'stamp_material_tampering', 'stamp', 'material'], fallback: model.signals.find(signal => signal.id === 'forensic')?.score },
-    { label: 'Multiclass tampering', keys: ['multiclassTampering', 'multiclass_tampering', 'multiclass'], fallback: model.overall.score }
-  ].map(item => {
-    const score = readForensicModelScore(forensics, item.keys) ?? item.fallback ?? null
-    return { ...item, score, status: scoreStatus(score), tone: tamperTone(score) }
-  })
+    { label: 'Photo tampering', score: 0 },
+    { label: 'Text tampering', score: 0 },
+    { label: 'Stamp and material tampering', score: 0 },
+    { label: 'Multiclass tampering', score: 0 }
+  ]
 
   return (
     <article className="fv-model-score-card">
       <header>
-        <div><span>Model score</span><strong>Document tampering models</strong></div>
-        <small>Ready for connected model outputs</small>
+        <div><span>Model score</span><strong>Forensic models report</strong></div>
       </header>
       <div className="fv-model-bars">
         {models.map(item => (
-          <div className={`fv-model-row ${item.tone}`} key={item.label}>
+          <div className="fv-model-row idle" key={item.label}>
             <span>{item.label}</span>
             <div><i style={{ width: `${Math.max(0, Math.min(100, item.score || 0))}%` }} /></div>
-            <strong>{item.score == null ? 'N/A' : Math.round(item.score)}</strong>
-            <em>{item.status}</em>
+            <strong>{Math.round(item.score)}</strong>
+            <em>Not run</em>
           </div>
         ))}
       </div>

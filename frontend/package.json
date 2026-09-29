@@ -1,6 +1,6 @@
 {
-  "name": "veriquickx-frontend",
-  "version": "1.0.0",
+  "name": "talon-frontend",
+  "version": "0.08",
   "private": true,
   "type": "module",
   "scripts": {
