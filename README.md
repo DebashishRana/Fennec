@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://github.com/user-attachments/assets/1ee60dd2-c615-4d5a-a6dd-394067c21973" width="240" alt="TALON" />
+  <img src="https://github.com/user-attachments/assets/080b07b8-3961-4e10-a05c-69262d7522ed" height="317" alt="image"  /> 
 </div>
 
 <div align="center">
@@ -164,7 +164,9 @@ Sarvam 105B is planned as the private reasoning layer for officer questions, ses
 | Guarded retrieval | Backend retrieves only authorized case evidence before calling the model |
 | Audit logging | Store prompt metadata, retrieved record IDs, model version, and response reference |
 
-Benchmarks for Sarvam 105B should be added only from the official Sarvam model card or the team's own controlled evaluation. Do not mix third-party LLM tables into TALON unless the source, date, benchmark, shot count, and model version are clearly identified.
+## Model benchmarks
+<img width="997" height="663" alt="image" src="https://github.com/user-attachments/assets/e1b901c8-8b83-4a7a-9506-c5a69ac420a9" />
+
 
 ## Tamper-Evident Audit Ledger
 
