@@ -22,20 +22,44 @@
 
 
 
-## TABLE OF CONTENTS 
-Key Innovation CSII 
-Key innovation Geopol 
-Key Innovation Sarvam Airtight Integration plan 
-Models Performance 
-Hash chain and blockchain 
-Module 1 OCR
-Module 2 Document validators and classifiers
-Module 3 Tampering and Anomaly Detection
-Module 4 Face verification module 
-Module 5 Integrations with govt sources 
-How to setup locally
-FAQ
+## Table of Contents
 
+### Overview
+- [Introduction](#introduction)
+- [Application Workflow](#applicaition-workflow)
+- [Runtime Components](#runtime-components)
+
+### Key Innovations
+- [Cross-Session Identity Intelligence (CSII)](#cross-session-identity-intelligence--key-innovation)
+- [Geopol — Geospatial Intelligence](#geopol--key-innovation)
+- [Sarvam 105B Reasoning Layer](#sarvam-105b-reasoning-layer)
+- [Tamper-Evident Audit Ledger](#tamper-evident-audit-ledger)
+
+### Modules
+- [Module 1: OCR](#ocr)
+- [Module 2: Document Classifiers](#document-classifiers)
+- [Module 3: Tampering & Anomaly Detection](#tampering-detection-models)
+- [Module 4: Face Verification](#face-verification-using-aws-rekognition-kit)
+- [Module 5: Government Integrations](#integrations)
+
+### Model Performance
+- [Deep Learning Model Metrics](#deep-learning-models-metrices)
+- [Passport Classifier Benchmark](#passport-classifier---kerastensorflow-notebook-benchmark)
+- [Aadhaar Classifier Status](#aadhaar-classifier---notebook-and-runtime-status)
+- [OCR & MRZ Evaluation Plan](#ocr-and-mrz-evaluation-plan)
+
+### Architecture & Security
+- [Data Model & Database Schema](#data-model-and-database-schema)
+- [Deployment & Security Direction](#deployment-and-security-direction)
+
+### Getting Started
+- [Repository Structure](#repository-structure)
+- [Local Development](#local-development)
+
+### Reference
+- [Current Limitations](#current-limitations)
+- [Demo Q&A Preparation](#demo-qa-preparation)
+- [Project Identity](#project-identity)
 
 ## Introduction
 TALON is an AI-assisted identity and travel-document screening platform for border, airport, immigration, and high-risk checkpoint environments. It combines document classification, OCR extraction, MRZ validation, face comparison, evidence review, CSII relationship analysis, Geopol movement visualization, and a tamper-evident audit trail into one officer-facing workflow.
@@ -125,6 +149,7 @@ For a formal submission, this section should be regenerated from a clean evaluat
 <img width="474" height="474" alt="image" src="https://github.com/user-attachments/assets/35595606-fdd3-4ef5-8b4b-b13b700ebb73" />
 
 # Cross Session Identity Intelligence | KEY INNOVATION
+<img width="1882" height="850" alt="image" src="https://github.com/user-attachments/assets/3488b8e7-1e9d-4f2a-8ca9-cf7d6f841256" />
 
 
 
@@ -150,6 +175,8 @@ Sarvam 105B is planned as the private reasoning layer for officer questions, ses
 
 
 # INTEGRATIONS
+<img width="1641" height="846" alt="image" src="https://github.com/user-attachments/assets/cbf8809c-ab9e-4c97-ab47-c4f25b5f4f5f" />
+
 
 
 ## Tamper-Evident Audit Ledger
