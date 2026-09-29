@@ -1,7 +1,11 @@
+<img width="521" height="478" alt="talon" src="https://github.com/user-attachments/assets/1ee60dd2-c615-4d5a-a6dd-394067c21973" />
+
 # TALON
 
-**Tampering and Anomaly Locator and Operational Net**
+## TABLE OF CONTENTS 
 
+
+## Introduction
 TALON is an AI-assisted identity and travel-document screening platform for border, airport, immigration, and high-risk checkpoint environments. It combines document classification, OCR extraction, MRZ validation, face comparison, evidence review, CSII relationship analysis, Geopol movement visualization, and a tamper-evident audit trail into one officer-facing workflow.
 
 The system is designed as decision support. It does not replace an authorized officer, immigration database, passport authority, or legal verification process. TALON surfaces evidence, inconsistencies, confidence scores, and audit records so that a human reviewer can make faster and more consistent screening decisions.
@@ -23,6 +27,9 @@ TALON addresses these challenges through a modular AI pipeline:
 | Weak auditability | Hash-chained audit events and structured session records |
 
 ## System Overview
+
+<img width="1027" height="646" alt="Picture1" src="https://github.com/user-attachments/assets/aef80e5a-9e83-426e-8449-e9378d8b73c0" />
+
 
 ### Runtime Components
 
