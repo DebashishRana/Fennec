@@ -107,19 +107,22 @@ For a formal submission, this section should be regenerated from a clean evaluat
 | MRZ validation | Check-digit pass rate | Verify MRZ check digits and parser issues |
 | OCR-MRZ consistency | Contradiction rate | Compare visual fields against parsed MRZ fields |
 
-### Face Verification Evaluation Plan
+# Face verification using AWS Rekognition Kit
 
-| Metric | Meaning |
-|---|---|
-| TAR | True accept rate for genuine document/person pairs |
-| FAR | False accept rate for impostor pairs |
-| FRR | False reject rate for genuine pairs |
-| Threshold | Similarity score used for pass/review/fail routing |
-| Provider availability | Percentage of sessions where face comparison returned a valid score |
+<img width="474" height="474" alt="image" src="https://github.com/user-attachments/assets/35595606-fdd3-4ef5-8b4b-b13b700ebb73" />
 
-### Sarvam 105B Reasoning Layer
+# Cross Session Identity Intelligence | KEY INNOVATION
+
+
+
+# GEOPOL | KEY INNOVATION 
+
+
+# Sarvam 105B Reasoning Layer
 
 Sarvam 105B is planned as the private reasoning layer for officer questions, session summaries, and evidence-backed explanation. It should not be described as the module that verifies documents or makes border decisions. TALON retrieves structured evidence first, then the model explains that evidence in plain language.
+### The model does not receive database credentials, object-store credentials, or direct access to government systems. It receives a bounded evidence packet prepared by TALON. It explains why a case was flagged, what evidence supports the conclusion, and which items require officer review. It does not approve, reject, alter, or delete sessions.
+
 
 | Capability | TALON use |
 |---|---|
@@ -154,33 +157,14 @@ Every new audit event stores:
 
 This gives TALON a defensible cybersecurity feature for audit integrity. If a past event is edited, deleted, or reordered, the later hashes no longer verify. In production this should move to the backend database, run under append-only permissions, and periodically anchor the terminal hash in a separate protected system.
 
-## Data Model and Records
+## Data Model and Database schema 
+<img width="998" height="506" alt="image" src="https://github.com/user-attachments/assets/4b9fee21-7225-4df2-944f-6c2c39112c24" />
 
-Core record groups:
 
-| Record group | Examples |
-|---|---|
-| Session identity | Session ID, officer ID, checkpoint, created time, status |
-| Document evidence | Document type, issuing country, file hash, preview reference |
-| OCR/MRZ results | Extracted fields, MRZ lines, check-digit status, parser issues |
-| Biometric evidence | Document portrait reference, live capture reference, similarity score |
-| Forensic result | Detector status, anomaly type, region, confidence |
-| Risk signals | Module score, severity, reason, supporting evidence |
-| CSII signals | Synthetic demo graph now; authorized correlation records later |
-| Geopol events | Checkpoint, event type, timestamp, travel path |
-| Audit events | Actor, action, target, metadata, hash-chain fields |
 
-## CSII and Geopol
 
-CSII and Geopol are intelligence layers, not primary document classifiers.
 
-CSII links session evidence into a graph: document references, opaque face evidence references, synthetic Aadhaar demo nodes, prior travel records, and anomaly edges. The current CSII module is synthetic and clearly marked as demo-only. In production it should connect only through authorized APIs and strict access control.
 
-Geopol visualizes checkpoint activity across India. It supports heatmap-style checkpoint load analysis and person-specific travel trail playback for a selected record. The current map uses no-key OpenStreetMap tiles through MapLibre for local development.
-
-## Sarvam Private Reasoning Architecture
-
-The model does not receive database credentials, object-store credentials, or direct access to government systems. It receives a bounded evidence packet prepared by TALON. It explains why a case was flagged, what evidence supports the conclusion, and which items require officer review. It does not approve, reject, alter, or delete sessions.
 
 ## Deployment and Security Direction
 
