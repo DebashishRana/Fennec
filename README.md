@@ -156,7 +156,11 @@ The service returns a similarity score, confidence value, bounding box data, and
 
 # Cross Session Identity Intelligence | KEY INNOVATION
 <img width="1882" height="850" alt="image" src="https://github.com/user-attachments/assets/3488b8e7-1e9d-4f2a-8ca9-cf7d6f841256" />
+CSII is implemented as a FastAPI-backed correlation service with a React graph UI. The backend receives only structured identity fields such as name, DOB, document number, document type, and nationality, converts them into HMAC-based opaque tokens, and compares them against synthetic identity, document, face-anchor, and travel-event records. The frontend displays the result as a graph using React Flow, showing links, conflicts, anomalies, and review signals.
 
+In the current prototype, CSII uses demo data only and does not query Aadhaar, NATGRID, immigration, or live government systems. Even without integrations, it can work on TALON’s own historical verification database by comparing previous sessions, document tokens, face-reference anchors, OCR/MRZ fields, checkpoint events, and timestamps. This helps detect document reuse, identity hopping, repeated suspicious patterns, and impossible-travel cases.
+
+In production, CSII would connect to approved trusted databases through secure backend adapters, using audit logs, access control, consent/legal authorization, and tokenized identifiers instead of raw sensitive data wherever possible. This can support counter-terror, illegal immigration, and fraud screening by surfacing high-risk relationship patterns for officer review, without making automatic enforcement decisions.
 
 
 # GEOPOL | KEY INNOVATION 
