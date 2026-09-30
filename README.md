@@ -89,9 +89,12 @@ The system is designed as decision support. It does not replace an authorized of
 | Audit | Frontend hash-chained audit events for demo | Backend append-only hash-chained audit ledger with external anchoring |
 
 
-# OCR 
+# OCR and PDF Rasterization
+TALON uses OCR to convert uploaded identity documents into searchable text and structured fields. For image uploads such as JPG, PNG, JPEG, and WebP, the backend opens the file with Pillow and runs Tesseract OCR directly on the image. The extracted text is then scanned for document-specific patterns such as PAN numbers, Aadhaar numbers, holder name, date of birth, gender, and other identity fields.
 
+For PDF uploads, TALON first tries to read embedded text using `pdfplumber`. This works for digitally generated PDFs where text is already stored inside the file. If no embedded text is found, the system treats the PDF as a scanned document and rasterizes the first pages into images using `pdf2image` and Poppler. These rendered page images are then passed to Tesseract OCR in the same way as normal image uploads.
 
+The OCR output is used by later verification stages. It helps identify the document type, extract structured metadata, detect Aadhaar or PAN patterns, parse MRZ text for passports, and provide text evidence to the classifier fallback logic when image models cannot run. For PDFs, rasterization also supports QR-code extraction and image-model classification by converting the PDF page into a standard image representation.
 
 # Document classifiers 
 
@@ -145,6 +148,9 @@ For a formal submission, this section should be regenerated from a clean evaluat
 | OCR-MRZ consistency | Contradiction rate | Compare visual fields against parsed MRZ fields |
 
 # Face verification using AWS Rekognition Kit
+TALON uses AWS Rekognition for the biometric verification step. The backend first normalizes the uploaded document image or PDF into a Rekognition-ready JPEG, then calls `DetectFaces` to locate the face in the document and crop the largest detected portrait. That cropped document face is then compared with the user’s live-captured face using Rekognition `CompareFaces`.
+
+The service returns a similarity score, confidence value, bounding box data, and a `PASS` or `REVIEW` status based on the configured match threshold. This result is used as an identity-consistency signal alongside OCR, MRZ validation, classification, and forensic document checks.
 
 <img width="474" height="474" alt="image" src="https://github.com/user-attachments/assets/35595606-fdd3-4ef5-8b4b-b13b700ebb73" />
 
@@ -154,6 +160,17 @@ For a formal submission, this section should be regenerated from a clean evaluat
 
 
 # GEOPOL | KEY INNOVATION 
+
+<img width="1229" height="906" alt="Screenshot 2026-09-30 115704" src="https://github.com/user-attachments/assets/9d15af2e-1511-4c28-af6c-af956002538e" />
+
+Geopol is implemented as a React/Vite page using MapLibre GL for the interactive map. It loads synthetic checkpoint and movement data from `geopolDemoData.js`, converts that data into GeoJSON `FeatureCollection`s, and renders it as MapLibre layers: raster OpenStreetMap tiles, checkpoint circle layers, symbol labels, heatmap layers, and LineString movement trails. React state controls the selected checkpoint, metric, heatmap visibility, and movement search, while CSS styles the side panels and controls.
+
+
+Geopol extends TALON from single-checkpoint verification into spatial and temporal movement analysis. It renders an all-India map of registered checkpoints with per-checkpoint analytics, overlays a session and anomaly-weighted heatmap for resource planning, and reconstructs individual movement trails as directed polylines across every checkpoint an identity has passed through. This makes anomalies visible that Verification Logs structurally cannot surface: impossible travel renders as a red dashed arc between two physically unreachable checkpoints, identity hopping appears as fragmented trails from one face hash under multiple names, and behavioural deviation is flagged when a new route falls outside an identity's historical footprint. Verification Logs are transaction-level; Geopol is pattern-level — the difference between checking a document and understanding a journey.
+
+
+
+<img width="1024" height="225" alt="image" src="https://github.com/user-attachments/assets/f6832e21-9198-4705-acbc-0818c8c2bb61" />
 
 
 # Sarvam 105B Reasoning Layer
@@ -175,8 +192,10 @@ Sarvam 105B is planned as the private reasoning layer for officer questions, ses
 
 
 # INTEGRATIONS
-<img width="1641" height="846" alt="image" src="https://github.com/user-attachments/assets/cbf8809c-ab9e-4c97-ab47-c4f25b5f4f5f" />
+<img width="1750" height="644" alt="Screenshot 2026-09-30 115852" src="https://github.com/user-attachments/assets/0e54f592-6bb0-4a9f-8b48-2162971e7d56" />
+The Integrations module is a ready frontend interface for connecting TALON with trusted external verification APIs such as DigiLocker, UIDAI, Airports Authority systems, NATGRID, and passport authority records. It is currently implemented as a React/Vite integration registry with cards, connection toggles, search, filtering, role-based access, and detail modals.
 
+In production, these cards would connect to backend FastAPI adapters that manage API credentials, consent flows, audit logging, and secure requests to approved sources. This helps TALON cross-check uploaded document data against issuer-verified records, airport/checkpoint movement signals, Aadhaar identity attributes, and intelligence alerts, improving safety by adding trusted-source verification beyond OCR, face match, and local document analysis.
 
 
 ## Tamper-Evident Audit Ledger
