@@ -89,18 +89,23 @@ The system is designed as decision support. It does not replace an authorized of
 | Audit | Frontend hash-chained audit events for demo | Backend append-only hash-chained audit ledger with external anchoring |
 
 
-# OCR and PDF Rasterization
+# OCR and PDF Rasterization and MRZ | MODULE 1 
 TALON uses OCR to convert uploaded identity documents into searchable text and structured fields. For image uploads such as JPG, PNG, JPEG, and WebP, the backend opens the file with Pillow and runs Tesseract OCR directly on the image. The extracted text is then scanned for document-specific patterns such as PAN numbers, Aadhaar numbers, holder name, date of birth, gender, and other identity fields.
 
 For PDF uploads, TALON first tries to read embedded text using `pdfplumber`. This works for digitally generated PDFs where text is already stored inside the file. If no embedded text is found, the system treats the PDF as a scanned document and rasterizes the first pages into images using `pdf2image` and Poppler. These rendered page images are then passed to Tesseract OCR in the same way as normal image uploads.
 
+| Module | Metric to report | How to compute |
+|---|---|---|
+| OCR full text | Character error rate and word error rate | Compare OCR output against manually prepared transcripts |
+| OCR fields | Field accuracy | Compare name, DOB, nationality, document number, expiry fields |
+| MRZ detection | Detection recall | Count documents where an MRZ exists and parser finds it |
+| MRZ validation | Check-digit pass rate | Verify MRZ check digits and parser issues |
+| OCR-MRZ consistency | Contradiction rate | Compare visual fields against parsed MRZ fields |
+
 The OCR output is used by later verification stages. It helps identify the document type, extract structured metadata, detect Aadhaar or PAN patterns, parse MRZ text for passports, and provide text evidence to the classifier fallback logic when image models cannot run. For PDFs, rasterization also supports QR-code extraction and image-model classification by converting the PDF page into a standard image representation.
 
-# Document classifiers 
+# Document classifiers  | MODULE 2 
 
-
-
-# TAMPERING DETECTION MODELS 
 
 # Deep Learning models metrices
 
@@ -137,7 +142,7 @@ For a formal submission, this section should be regenerated from a clean evaluat
 | Soft-voting ensemble | Notebook note says about 83% after optimization | Treat as development result until exported |
 | Runtime fallback | OCR keywords when artifacts are unavailable | Conservative fallback, not a trained-score claim |
 
-### OCR and MRZ Evaluation Plan
+### OCR and MRZ Evaluation Plan MODULE 
 
 | Module | Metric to report | How to compute |
 |---|---|---|
@@ -147,15 +152,23 @@ For a formal submission, this section should be regenerated from a clean evaluat
 | MRZ validation | Check-digit pass rate | Verify MRZ check digits and parser issues |
 | OCR-MRZ consistency | Contradiction rate | Compare visual fields against parsed MRZ fields |
 
-# Face verification using AWS Rekognition Kit
+# Tampering Detection models | MODULE 3 
+
+# FACE VERIFICATION | MODULE 4
+<p align="center">
+ <img width="260" height="260" alt="image" src="https://github.com/user-attachments/assets/e5bb12e7-ebfc-4b16-8771-e27964bdd4c4" />
+
+
+</p>
 TALON uses AWS Rekognition for the biometric verification step. The backend first normalizes the uploaded document image or PDF into a Rekognition-ready JPEG, then calls `DetectFaces` to locate the face in the document and crop the largest detected portrait. That cropped document face is then compared with the user’s live-captured face using Rekognition `CompareFaces`.
 
 The service returns a similarity score, confidence value, bounding box data, and a `PASS` or `REVIEW` status based on the configured match threshold. This result is used as an identity-consistency signal alongside OCR, MRZ validation, classification, and forensic document checks.
 
-<img width="474" height="474" alt="image" src="https://github.com/user-attachments/assets/35595606-fdd3-4ef5-8b4b-b13b700ebb73" />
+
 
 # Cross Session Identity Intelligence | KEY INNOVATION
-<img width="1882" height="850" alt="image" src="https://github.com/user-attachments/assets/3488b8e7-1e9d-4f2a-8ca9-cf7d6f841256" />
+<img width="1153" height="756" alt="Screenshot 2026-09-30 132447" src="https://github.com/user-attachments/assets/93571c14-f094-46aa-996d-c881b272e098" />
+
 
 
 
