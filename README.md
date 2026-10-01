@@ -48,9 +48,12 @@
 - [Aadhaar Classifier Status](#aadhaar-classifier---notebook-and-runtime-status)
 - [OCR & MRZ Evaluation Plan](#ocr-and-mrz-evaluation-plan)
 
-### Architecture & Security
+### Architecture 
 - [Data Model & Database Schema](#data-model-and-database-schema)
 - [Deployment & Security Direction](#deployment-and-security-direction)
+
+### Security 
+[Security Practices](#Secuirty)
 
 ### Getting Started
 - [Repository Structure](#repository-structure)
@@ -211,26 +214,9 @@ The Integrations module is a ready frontend interface for connecting TALON with 
 In production, these cards would connect to backend FastAPI adapters that manage API credentials, consent flows, audit logging, and secure requests to approved sources. This helps TALON cross-check uploaded document data against issuer-verified records, airport/checkpoint movement signals, Aadhaar identity attributes, and intelligence alerts, improving safety by adding trusted-source verification beyond OCR, face match, and local document analysis.
 
 
-## Tamper-Evident Audit Ledger
+TALON implements a hash-chained audit ledger for all screening events, officer actions, and system decisions. Each event is linked to its predecessor via SHA-256, so any edit, deletion, or reordering invalidates all subsequent hashes. This is intentionally not described as a blockchain — it is a practical tamper-evident ledger.
 
-TALON now implements a lightweight hash-chained audit ledger for local audit events. This is intentionally not described as a blockchain. It is a practical tamper-evident ledger:
-
-```text
-event_hash_n = SHA256(chain_index_n + payload_hash_n + previous_event_hash_n)
-payload_hash_n = SHA256(canonical_event_payload_n)
-previous_event_hash_n = event_hash_(n-1)
-```
-
-Every new audit event stores:
-
-| Field | Purpose |
-|---|---|
-| `chainIndex` | Ordered position of the event in the local chain |
-| `previousEventHash` | Hash of the previous event |
-| `payloadHash` | Hash of the event content |
-| `eventHash` | Final hash linking this event to the chain |
-
-This gives TALON a defensible cybersecurity feature for audit integrity. If a past event is edited, deleted, or reordered, the later hashes no longer verify. In production this should move to the backend database, run under append-only permissions, and periodically anchor the terminal hash in a separate protected system.
+The ledger is written only by the backend under append-only permissions, signed per event with CRYSTALS-Dilithium, and periodically anchored to an external RFC 3161 timestamp authority. This gives TALON a mathematically provable audit trail — a property absent from current Indian border screening systems.
 
 ## Data Model and Database schema 
 <img width="998" height="506" alt="image" src="https://github.com/user-attachments/assets/4b9fee21-7225-4df2-944f-6c2c39112c24" />
