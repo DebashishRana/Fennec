@@ -60,9 +60,9 @@
 - [Defence-in-Depth Security Model](#defence-in-depth-security-model)
 
 ### Database 
-- [Database overview]
-- [Database Design]
-- [Database Tradeoff] 
+- [Database overview](#overview)
+- [Database Design and Schema ](#database-design)
+- [Database Tradeoff](#database-tradeoffs) 
 
 ### Getting Started
 - [Repository Structure](#repository-structure)
@@ -367,6 +367,19 @@ For local development, TALON runs as a Vite frontend and FastAPI backend. For a 
 | AWS activity audit | CloudTrail for AWS API activity |
 | Application audit | TALON hash-chained audit ledger for officer actions and session events |
 | Retention | Fixed retention periods, legal hold support, verified deletion jobs |
+
+### Database 
+## Overview
+
+TALON includes a versioned MySQL 8.0 database package for storing screening cases, organizations, checkpoints, users, documents, live captures, OCR/MRZ results, validation and forensic findings, biometric checks, risk assessments, officer decisions, audit events, retention policies, legal holds, and verified purge records. The schema contains 30 core tables and is applied through ordered SQL migrations, with an additional authentication migration for user email, password-hash, and account-policy fields. The database is designed as an officer-assist system of record; it stores verification evidence and decisions but does not perform OCR, AI inference, biometric matching, or final border decisions itself.
+
+## Database Design
+
+`screening_cases` acts as the central entity. Each case can contain multiple documents, document files, live-media captures, and versioned analysis runs. OCR, MRZ, validation, forensic, and biometric outputs are linked to their source evidence and contribute to explainable risk assessments. Officer actions are stored separately in `workflow_decisions`, ensuring that AI-generated recommendations remain advisory. MySQL foreign keys, indexes, `CHECK` constraints, UTC timestamps, binary UUIDs, encrypted identity fields, HMAC lookup tokens, content hashes, audit-chain fields, retention rules, legal holds, access tokens, and verified purge records provide traceability and lifecycle control. The migration package and ER diagrams were validated against MySQL 8.0.45 using synthetic demonstration data only.
+
+## Database Tradeoff
+
+The design uses MySQL for structured metadata, relationships, integrity checks, audit records, and workflow decisions, while large immutable files such as passport images, PDFs, crops, and live captures are intended for encrypted self-hosted MinIO storage. This avoids storing large binary objects in relational tables and allows independent object lifecycle and retention management, but requires backend integration for upload quarantine, malware scanning, object hashing, authorization, retention, and deletion verification. The package intentionally avoids an external database service, vector database, and blockchain in V1 to reduce complexity and maintain deployment control; the current application still requires backend integration before this MySQL package becomes the active production data store.
 
 ## Repository Structure
 
