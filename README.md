@@ -26,34 +26,38 @@
 
 ### Overview
 - [Introduction](#introduction)
-- [Application Workflow](#applicaition-workflow)
+- [Application Workflow](#application-workflow)
 - [Runtime Components](#runtime-components)
 
 ### Key Innovations
-- [Cross-Session Identity Intelligence (CSII)](#cross-session-identity-intelligence--key-innovation)
-- [Geopol — Geospatial Intelligence](#geopol--key-innovation)
-- [Sarvam 105B Reasoning Layer](#sarvam-105b-reasoning-layer)
+- [Cross-Session Identity Intelligence (CSII)](#csii)
+- [Geopol — Geospatial Intelligence](#geopol)
+- [Sarvam 105B Reasoning Layer](#sarvam-105b)
 - [Tamper-Evident Audit Ledger](#tamper-evident-audit-ledger)
 
 ### Modules
-- [Module 1: OCR](#ocr)
-- [Module 2: Document Classifiers](#document-classifiers)
-- [Module 3: Tampering & Anomaly Detection](#tampering-detection-models)
-- [Module 4: Face Verification](#face-verification-using-aws-rekognition-kit)
-- [Module 5: Government Integrations](#integrations)
+- [Module 1: OCR, PDF Rasterization & MRZ](#module-1-ocr)
+- [Module 2: Document Classifiers & Validators](#module-2-document-classifiers)
+- [Module 3: Tampering & Forgery Detection](#module-3-tampering)
+- [Module 4: Face Verification](#module-4-face-verification)
+- [Module 5: Government Integrations](#module-5-integrations)
 
 ### Model Performance
-- [Deep Learning Model Metrics](#deep-learning-models-metrices)
-- [Passport Classifier Benchmark](#passport-classifier---kerastensorflow-notebook-benchmark)
-- [Aadhaar Classifier Status](#aadhaar-classifier---notebook-and-runtime-status)
-- [OCR & MRZ Evaluation Plan](#ocr-and-mrz-evaluation-plan)
+- [Deep Learning Model Metrics](#deep-learning-model-metrics)
+- [Passport Classifier Benchmark](#passport-classifier-benchmark)
+- [Aadhaar Classifier Status](#aadhaar-classifier-status)
+- [OCR & MRZ Evaluation Plan](#ocr-mrz-evaluation)
 
-### Architecture 
-- [Data Model & Database Schema](#data-model-and-database-schema)
-- [Deployment & Security Direction](#deployment-and-security-direction)
+### Architecture
+- [Data Model & Database Schema](#data-model-database-schema)
+- [Deployment & Security Direction](#deployment-security-direction)
 
-### Security 
-[Security Practices](#Secuirty)
+### Security
+- [Security Practices](#security)
+- [Implemented Security Measures](#implemented-security-measures)
+- [Proposed Production Security](#proposed-production-security)
+- [Blockchain / Distributed Audit Layer](#blockchain-distributed-audit-layer)
+- [Defence-in-Depth Security Model](#defence-in-depth-security-model)
 
 ### Getting Started
 - [Repository Structure](#repository-structure)
@@ -218,9 +222,129 @@ The ledger is written only by the backend under append-only permissions, signed 
 <img width="998" height="506" alt="image" src="https://github.com/user-attachments/assets/4b9fee21-7225-4df2-944f-6c2c39112c24" />
 
 
+# Security Strategy 
 
 
+TALON is designed with a **security-first architecture** because it handles highly sensitive identity, biometric, travel, and document-verification data.
 
+### Implemented Security Measures
+
+- **Backend Authentication & Secure Sessions**
+  - Salted password hashing.
+  - Server-managed session tokens.
+  - Session expiry and logout revocation.
+  - HttpOnly cookies.
+  - CSRF protection for authenticated requests.
+
+- **Role-Based Permission Checks**
+  - Backend authorization for sensitive operations.
+  - Controlled access to case evaluation, officer decisions, audit verification, and integration endpoints.
+
+- **Server-Controlled Decision Logic**
+  - Critical verification thresholds are enforced by the backend.
+  - Prevents the frontend from directly controlling important verification decisions.
+
+- **Secure Upload Validation**
+  - File-signature and extension validation.
+  - Image and PDF structure checks.
+  - File-size, page-count, and image-dimension limits.
+  - Rejection of malformed or unsupported documents.
+
+- **Reduced Sensitive Browser Storage**
+  - Raw document images and face captures are minimized in browser persistence.
+  - Only necessary workflow metadata is retained where possible.
+
+- **Tamper-Evident Audit Trail**
+  - Security-sensitive events are stored in a **SHA-256 hash-chained audit ledger**.
+  - Each event is linked to the previous event, helping detect unauthorized modification of audit history.
+
+- **Authenticated Evidence Manifests**
+  - HMAC-SHA-256 protects integrity information associated with verification evidence, policy versions, and processing results.
+
+- **Human-in-the-Loop Verification**
+  - Uncertain, incomplete, or suspicious cases can be escalated for manual review.
+  - AI-generated results are treated as decision-support signals rather than unquestionable final decisions.
+
+---
+
+### Proposed Production Security
+
+- **End-to-End Encryption**
+  - TLS-secured network communication.
+  - Encryption at rest for databases, documents, biometric evidence, and backups.
+  - KMS-managed encryption keys.
+
+- **Private / Government-Controlled Deployment**
+  - Private VPC architecture.
+  - Government-approved cloud infrastructure.
+  - Isolated environments for sensitive AI and document-processing workloads.
+
+- **IAM & Least-Privilege Access**
+  - Officers, administrators, backend services, AI models, and external integrations receive only the minimum permissions required.
+
+- **Secure Secrets Management**
+  - API keys, database passwords, signing keys, and integration credentials stored using dedicated secret-management systems.
+
+- **Security Monitoring**
+  - Centralized audit logging.
+  - Access monitoring.
+  - Intrusion and anomaly detection.
+  - Periodic security review and revalidation.
+
+---
+
+### Blockchain / Distributed Audit Layer
+
+TALON currently implements a **tamper-evident hash-chained audit ledger** rather than a full blockchain.
+
+For production deployment, this can be extended using a **permissioned blockchain or externally anchored distributed audit system**.
+
+The proposed blockchain layer can store:
+
+- Cryptographic event hashes.
+- Verification-result hashes.
+- Officer decision hashes.
+- Timestamps.
+- Case references.
+- Audit proofs.
+
+Raw sensitive data such as:
+
+- Passport images.
+- Aadhaar information.
+- Face images.
+- Biometric evidence.
+
+would **not be directly stored on the blockchain**.
+
+Instead, this information would remain inside secure government-controlled storage, while blockchain records would act as independent proofs of integrity and event history.
+
+This can provide:
+
+- Stronger audit traceability.
+- Better detection of historical record manipulation.
+- Cross-agency verification of audit records.
+- Improved accountability.
+- Independent verification of important TALON actions.
+
+---
+
+### Defence-in-Depth Security Model
+
+TALON follows a **defence-in-depth security approach**, combining:
+
+- Authentication.
+- Authorization.
+- Encryption.
+- Secure storage.
+- Upload validation.
+- Audit integrity.
+- Blockchain-based integrity proofs.
+- AI confidence thresholds.
+- Controlled government integrations.
+- Human review.
+
+The objective is to ensure that **no single AI model, verification signal, user account, or security mechanism becomes the sole point of trust in the system**.
 ## Deployment and Security Direction
 
 For local development, TALON runs as a Vite frontend and FastAPI backend. For a serious pilot, the system should be deployed with isolated services, encrypted storage, backend-only secrets, and observability.
