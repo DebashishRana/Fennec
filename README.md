@@ -59,6 +59,11 @@
 - [Blockchain / Distributed Audit Layer](#blockchain-distributed-audit-layer)
 - [Defence-in-Depth Security Model](#defence-in-depth-security-model)
 
+### Database 
+- [Database overview]
+- [Database Design]
+- [Database Tradeoff] 
+
 ### Getting Started
 - [Repository Structure](#repository-structure)
 - [Local Development](#local-development)
