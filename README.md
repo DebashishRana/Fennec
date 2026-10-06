@@ -118,6 +118,8 @@ Once TALON determines the document category, the uploaded image can be forwarded
 # Deep Learning models metrices
 
 ### Passport Classifier - Keras/TensorFlow Notebook Benchmark
+<img width="859" height="706" alt="image" src="https://github.com/user-attachments/assets/b213da87-6bb9-4cbb-a112-a0756da12abc" />
+
 
 Source: `models/Passport classfier/passport_classifier.ipynb`
 
@@ -134,7 +136,7 @@ Source: `models/Passport classfier/passport_classifier.ipynb`
 
 ### Aadhaar Classifier - Notebook and Runtime Status
 
-Source: `models/Aadhar Classifier/Aadhar.ipynb`
+Source: `models/Aadhar Classifier/Aadhar.ipynb'
 
 
 # TAMPERING AND FORGERY DETECTION | MODULE 3 
@@ -144,6 +146,8 @@ TALON proposes a specialized multi-model deep learning approach for document tam
 • MIDV-2020 (La Rochelle University)
 • FMIDV (La Rochelle University )
 • IdNet
+
+If TALON is accepted for real-world deployment, the system will be further trained, refined, and validated using authorized real-world government datasets representing genuine passports and identity documents across different regions, formats, scan qualities, lighting conditions, stamps, physical wear, and verified tampering cases. These datasets would be used to improve the accuracy and robustness of the OCR, MRZ, face comparison, CSII, and specialized forensic models while reducing false positives and false negatives. The four forensic models would undergo continuous calibration, threshold tuning, confidence evaluation, and periodic revalidation, with uncertain or borderline cases routed to human reviewers instead of being automatically accepted or rejected.
 
 
 
