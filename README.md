@@ -20,7 +20,7 @@
   <p><strong>Video timestamps are available in the YouTube description.</p>
 </div>
 
-
+## <b> You are not allowed to clone the repository and modify the application or fork without prior permission ! </b>
 
 ## Table of Contents
 
@@ -105,14 +105,17 @@ For PDF uploads, TALON first tries to read embedded text using `pdfplumber`. Thi
 | MRZ validation | Check-digit pass rate | Verify MRZ check digits and parser issues |
 | OCR-MRZ consistency | Contradiction rate | Compare visual fields against parsed MRZ fields |
 
+
 The OCR output is used by later verification stages. It helps identify the document type, extract structured metadata, detect Aadhaar or PAN patterns, parse MRZ text for passports, and provide text evidence to the classifier fallback logic when image models cannot run. For PDFs, rasterization also supports QR-code extraction and image-model classification by converting the PDF page into a standard image representation.
 
-# Document classifiers  | MODULE 2 
+# Document classifiers and Validators | MODULE 2 
+The TALON Document Classification Module is responsible for identifying the type of identity document submitted to the system before any document-specific verification, extraction, or forensic analysis is performed.
+Identity documents such as Aadhaar cards and passports contain highly sensitive personal information, and their visual structures can vary significantly because of differences in document versions, image quality, camera angle, lighting conditions, backgrounds, partial occlusion, scanning artifacts, and physical wear.
+For TALON, document classification is therefore treated as more than a conventional image-classification problem. It acts as the first intelligent routing layer of the document verification pipeline.
+Once TALON determines the document category, the uploaded image can be forwarded to a specialized processing pipeline designed specifically for that document type.
 
 
 # Deep Learning models metrices
-
-TALON should report only metrics that are actually produced by the project notebooks or repeatable evaluation runs. The tables below separate confirmed notebook output from metrics that still need a clean exported evaluation run.
 
 ### Passport Classifier - Keras/TensorFlow Notebook Benchmark
 
@@ -133,29 +136,18 @@ Source: `models/Passport classfier/passport_classifier.ipynb`
 
 Source: `models/Aadhar Classifier/Aadhar.ipynb`
 
-The Aadhaar notebook contains model-development code for Logistic Regression, tuned SVM, tuned RandomForest, PCA, and soft-voting ensemble. The notebook text states that optimization improved the score from roughly 79-80% to about 83%, but the persisted output cells do not currently include the final precision, recall, F1-score, confusion matrix, or ROC-AUC values.
 
-For a formal submission, this section should be regenerated from a clean evaluation run before claiming final Aadhaar metrics.
+# TAMPERING AND FORGERY DETECTION | MODULE 3 
+TALON proposes a specialized multi-model deep learning approach for document tampering detection instead of relying on a single generic forgery detector. The system is designed around four dedicated models, each focusing on a different class of manipulation: stamp tampering, material/physical document tampering, face or photograph tampering, and text tampering. Each model independently analyses the document for anomalies within its area of specialization, after which their outputs are combined to produce a more reliable overall tampering assessment. This ensemble-style approach allows TALON to detect both isolated modifications and complex forged documents where multiple elements may have been altered simultaneously, providing a stronger and more explainable basis for downstream risk analysis.
+### Key Dataset utilized 
+• Multi-Country Passport Dataset
+• MIDV-2020 (La Rochelle University)
+• FMIDV (La Rochelle University )
+• IdNet
 
-| Model candidate | Current evidence | README status |
-|---|---|---|
-| Logistic Regression + PCA | Notebook code and score variable | Re-run required for exact accuracy |
-| Tuned SVM + PCA | Notebook code with `classification_report` call | Re-run required for precision, recall, F1 |
-| Tuned RandomForest + PCA | Notebook code with GridSearchCV | Re-run required for exact accuracy |
-| Soft-voting ensemble | Notebook note says about 83% after optimization | Treat as development result until exported |
-| Runtime fallback | OCR keywords when artifacts are unavailable | Conservative fallback, not a trained-score claim |
 
-### OCR and MRZ Evaluation Plan MODULE 
 
-| Module | Metric to report | How to compute |
-|---|---|---|
-| OCR full text | Character error rate and word error rate | Compare OCR output against manually prepared transcripts |
-| OCR fields | Field accuracy | Compare name, DOB, nationality, document number, expiry fields |
-| MRZ detection | Detection recall | Count documents where an MRZ exists and parser finds it |
-| MRZ validation | Check-digit pass rate | Verify MRZ check digits and parser issues |
-| OCR-MRZ consistency | Contradiction rate | Compare visual fields against parsed MRZ fields |
 
-# Tampering Detection models | MODULE 3 
 
 # FACE VERIFICATION | MODULE 4
 <p align="center">
